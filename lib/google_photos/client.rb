@@ -137,4 +137,49 @@ class GooglePhotosClient
       raise "Batch create failed: #{response.code} - #{response.body}"
     end
   end
+
+  def list_albums(page_size: 50, &block)
+    albums = [] unless block_given?
+    next_page_token = nil
+
+    loop do
+      # Build URL with query parameters
+      uri = URI("#{BASE_URL}/albums")
+      params = { pageSize: page_size }
+      params[:pageToken] = next_page_token if next_page_token
+      uri.query = URI.encode_www_form(params)
+
+      http = Net::HTTP.new(uri.host, uri.port)
+      http.use_ssl = true
+
+      request = Net::HTTP::Get.new(uri)
+      credentials.apply!(request)
+
+      response = http.request(request)
+
+      if response.code == '200'
+        result = JSON.parse(response.body)
+        page_albums = result['albums'] || []
+
+        if block_given?
+          # Yield each album to the block
+          page_albums.each { |album| yield album }
+        else
+          # Collect albums in array
+          albums.concat(page_albums)
+        end
+
+        # Check for more pages
+        next_page_token = result['nextPageToken']
+        break unless next_page_token
+      else
+        raise "List albums failed: #{response.code} - #{response.body}"
+      end
+    end
+
+    unless block_given?
+      puts "✓ Retrieved #{albums.count} album(s)"
+      albums
+    end
+  end
 end
