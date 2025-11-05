@@ -9,7 +9,11 @@ require 'exif'
 require_relative 'lib/google_photos/auth'
 require_relative 'lib/google_photos/client'
 
-SCOPE = 'https://www.googleapis.com/auth/photoslibrary.appendonly'
+SCOPES = [
+  'https://www.googleapis.com/auth/photoslibrary.appendonly',
+  'https://www.googleapis.com/auth/photoslibrary.readonly.appcreateddata',
+  'https://www.googleapis.com/auth/photoslibrary.edit.appcreateddata'
+]
 
 def upload_to_new_album(client, photos, album_title, album_description = nil)
   puts "\nStarting upload process..."
@@ -53,14 +57,16 @@ config = JSON.parse(File.read('config.json'))
 credentials = GooglePhotos::Auth.new(
   config['clientId'],
   config['clientSecret'],
-  SCOPE
+  SCOPES
 ).authorize
 
 client = GooglePhotosClient.new(credentials)
 
 # Load Flickr Albums
 flickr_albums = JSON.parse(File.read('flickr/albums.json'))
-album = flickr_albums['albums'].find { |a| a['title'] == 'Garfield Ridge Hike' }
+album_title = "Arizona and Vegas"
+album = flickr_albums['albums'].find { |a| a['title'] == album_title }
+album_description = (album["description"] || "").gsub(/<\/?b>/, '')
 
 photos = album["photos"].map do |photo_id|
   # Not sure why this happens sometimes
@@ -103,6 +109,10 @@ photos.each do |photo|
       file.write(Net::HTTP.get(URI(photo_url)))
     end
   end
+end
+
+photos.each do |photo|
+  photo_file = photo["path"]
 
   File.open(photo_file) do |f|
     exif = Exif::Data.new(f)
@@ -110,11 +120,18 @@ photos.each do |photo|
   end
 end
 
+puts "Files ready to upload, continue? (y/n)"
+continue = gets.chomp
+if continue != "y"
+  puts "Exiting..."
+  exit
+end
+
 result = upload_to_new_album(
   client,
   photos,
-  album["title"],
-  album["description"]
+  album_title,
+  album_description
 )
 
 puts "\n" + "="*60
