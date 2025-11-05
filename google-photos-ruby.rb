@@ -4,6 +4,7 @@ require 'net/http'
 require 'uri'
 require 'json'
 require 'fileutils'
+require 'exif'
 
 require_relative 'lib/google_photos/auth'
 require_relative 'lib/google_photos/client'
@@ -59,7 +60,7 @@ client = GooglePhotosClient.new(credentials)
 
 # Load Flickr Albums
 flickr_albums = JSON.parse(File.read('flickr/albums.json'))
-album = flickr_albums['albums'].find { |a| a['title'] == 'Mt. Hale Snowshoeing' }
+album = flickr_albums['albums'].find { |a| a['title'] == 'Garfield Ridge Hike' }
 
 photos = album["photos"].map do |photo_id|
   # Not sure why this happens sometimes
@@ -67,14 +68,12 @@ photos = album["photos"].map do |photo_id|
 
   {
     "id" => photo_id,
-    "path" => "tmp/#{album["id"]}/#{photo_id}.jpg"
   }
 end.compact
 
 puts "Uploading album: #{album["title"]}"
 puts "Caching #{photos.count} photos locally..."
 
-FileUtils.mkdir_p("tmp/#{album["id"]}")
 photos.each do |photo|
   photo_id = photo["id"]
 
@@ -83,13 +82,31 @@ photos.each do |photo|
     photo["description"] = description
   end
 
-  photo_file = photo["path"]
-  next if File.exist?(photo_file)
-
   photo_url = photo_json["original"]
-  puts "Downloading #{photo_id} (#{photo_url})"
-  File.open(photo_file, 'wb') do |file|
-    file.write(Net::HTTP.get(URI(photo_url)))
+  photo["url"] = photo_url
+
+  ext = File.extname(photo_url)
+  photo_file = "tmp/#{album["id"]}/#{photo_json["name"]}#{ext}"
+  photo["path"] = photo_file
+end
+
+photos.sort_by! { |p| p["path"] }
+
+FileUtils.mkdir_p("tmp/#{album["id"]}")
+photos.each do |photo|
+  photo_url = photo["url"]
+  photo_file = photo["path"]
+
+  unless File.exist?(photo_file)
+    puts "Downloading #{File.basename(photo_file)} (#{photo_url})"
+    File.open(photo_file, 'wb') do |file|
+      file.write(Net::HTTP.get(URI(photo_url)))
+    end
+  end
+
+  File.open(photo_file) do |f|
+    exif = Exif::Data.new(f)
+    puts "* #{photo_file} taken #{exif.date_time_original} - #{photo["description"]}"
   end
 end
 
