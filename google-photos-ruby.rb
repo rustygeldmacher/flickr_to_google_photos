@@ -10,24 +10,25 @@ require_relative 'lib/google_photos/client'
 
 SCOPE = 'https://www.googleapis.com/auth/photoslibrary.appendonly'
 
-def upload_to_new_album(client, photos_array, album_title, album_description = nil)
+def upload_to_new_album(client, photos, album_title, album_description = nil)
   puts "\nStarting upload process..."
-  puts "Photos to upload: #{photos_array.length}"
+  puts "Photos to upload: #{photos.length}"
 
   # Upload all photos and collect tokens
   puts "\n1. Uploading photo bytes..."
-  upload_tokens_with_descriptions = photos_array.map.with_index do |(file_path, description), index|
-    print "  Uploading #{index + 1}/#{photos_array.length}: #{File.basename(file_path)}..."
+  upload_tokens_with_descriptions = photos.map.with_index do |photo, index|
+    file_path = photo["path"]
+    print "  Uploading #{index + 1}/#{photos.length}: #{File.basename(file_path)}..."
     upload_token = client.upload_photo_bytes(file_path)
     puts " ✓"
-    [upload_token, description]
+    [upload_token, photo["description"]]
   end
 
   puts "\n2. Creating album..."
   album = client.create_album(album_title)
 
   # Add text enrichment if description provided
-  if album_description
+  unless album_description.nil? || album_description.empty?
     puts "\n3. Adding album description..."
     client.add_text_enrichment(album['id'], album_description)
   end
@@ -46,41 +47,65 @@ def upload_to_new_album(client, photos_array, album_title, album_description = n
   }
 end
 
-begin
-  # Load configuration
-  config = JSON.parse(File.read('config.json'))
-  credentials = GooglePhotos::Auth.new(
-    config['clientId'],
-    config['clientSecret'],
-    SCOPE
-  ).authorize
+# Load configuration
+config = JSON.parse(File.read('config.json'))
+credentials = GooglePhotos::Auth.new(
+  config['clientId'],
+  config['clientSecret'],
+  SCOPE
+).authorize
 
-  client = GooglePhotosClient.new(credentials)
+client = GooglePhotosClient.new(credentials)
 
-  # Array of [photo_file_path, photo_description]
-  photos = [
-    ['vacation_1.png', 'Beautiful sunset from day 1'],
-    ['vacation_2.jpg', 'Beach view from day 2'],
-  ]
+# Load Flickr Albums
+flickr_albums = JSON.parse(File.read('flickr/albums.json'))
+album = flickr_albums['albums'].find { |a| a['title'] == 'Mt. Hale Snowshoeing' }
 
-  result = upload_to_new_album(
-    client,
-    photos,
-    'My Vacation Photos',
-    'Summer 2024 trip to Hawaii' # Album description
-  )
+photos = album["photos"].map do |photo_id|
+  # Not sure why this happens sometimes
+  next if photo_id == "0"
 
-  puts "\n" + "="*60
-  puts "SUCCESS!"
-  puts "="*60
-  puts "Album ID: #{result[:album]['id']}"
-  puts "Album Title: #{result[:album]['title']}"
-  puts "Photos uploaded: #{result[:media_items].count}"
-  result[:media_items].each_with_index do |item, idx|
-    puts "  #{idx + 1}. #{item['filename']} (ID: #{item['id']})"
+  {
+    "id" => photo_id,
+    "path" => "tmp/#{album["id"]}/#{photo_id}.jpg"
+  }
+end.compact
+
+puts "Uploading album: #{album["title"]}"
+puts "Caching #{photos.count} photos locally..."
+
+FileUtils.mkdir_p("tmp/#{album["id"]}")
+photos.each do |photo|
+  photo_id = photo["id"]
+
+  photo_json = JSON.parse(File.read("flickr/photo_#{photo_id}.json"))
+  if (description = photo_json["description"])
+    photo["description"] = description
   end
 
-rescue => e
-  puts "\n❌ Error: #{e.message}"
-  puts e.backtrace.first(5).join("\n") if ENV['DEBUG']
+  photo_file = photo["path"]
+  next if File.exist?(photo_file)
+
+  photo_url = photo_json["original"]
+  puts "Downloading #{photo_id} (#{photo_url})"
+  File.open(photo_file, 'wb') do |file|
+    file.write(Net::HTTP.get(URI(photo_url)))
+  end
+end
+
+result = upload_to_new_album(
+  client,
+  photos,
+  album["title"],
+  album["description"]
+)
+
+puts "\n" + "="*60
+puts "SUCCESS!"
+puts "="*60
+puts "Album ID: #{result[:album]['id']}"
+puts "Album Title: #{result[:album]['title']}"
+puts "Photos uploaded: #{result[:media_items].count}"
+result[:media_items].each_with_index do |item, idx|
+  puts "  #{idx + 1}. #{item['filename']} (ID: #{item['id']})"
 end

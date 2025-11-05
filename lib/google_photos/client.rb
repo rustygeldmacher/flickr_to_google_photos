@@ -106,7 +106,9 @@ class GooglePhotosClient
           uploadToken: upload_token
         }
       }
-      item[:description] = description if description
+      unless description.nil? || description.empty?
+        item[:description] = description
+      end
       item
     end
 
