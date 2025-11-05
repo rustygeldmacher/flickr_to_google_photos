@@ -1,5 +1,8 @@
 #!/usr/bin/env ruby
 
+ENV["BUNDLE_GEMFILE"] ||= File.join(__dir__, "Gemfile")
+require "bundler/setup"
+
 require 'net/http'
 require 'uri'
 require 'json'
@@ -59,7 +62,7 @@ client = GooglePhotosClient.new(credentials)
 
 # Load Flickr Albums
 flickr_albums = JSON.parse(File.read('flickr/albums.json'))
-album_title = "Arizona and Vegas"
+album_title = "Camping at Niagara Falls"
 album = flickr_albums['albums'].find { |a| a['title'] == album_title }
 album_description = (album["description"] || "").gsub(/<\/?b>/, '')
 
