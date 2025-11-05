@@ -1,3 +1,4 @@
 config.json
 flickr/
 tmp/
+.google_photos_tokens.yaml

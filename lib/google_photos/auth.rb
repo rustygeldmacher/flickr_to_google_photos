@@ -4,13 +4,15 @@ require 'googleauth/stores/file_token_store'
 module GooglePhotos
   class Auth
     OOB_URI = 'urn:ietf:wg:oauth:2.0:oob'
-    TOKEN_STORE_PATH = File.join(Dir.home, '.google_photos_tokens.yaml')
+    SCOPES = [
+      'https://www.googleapis.com/auth/photoslibrary.appendonly',
+      'https://www.googleapis.com/auth/photoslibrary.readonly.appcreateddata',
+      'https://www.googleapis.com/auth/photoslibrary.edit.appcreateddata'
+    ]
+    TOKEN_STORE_PATH = '.google_photos_tokens.yaml'
 
-    attr_reader :scope
-
-    def initialize(client_id, client_secret, scope)
+    def initialize(client_id, client_secret)
       @client_id = Google::Auth::ClientId.new(client_id, client_secret)
-      @scope = scope
     end
 
     def authorize
@@ -56,7 +58,7 @@ module GooglePhotos
         token_store_dir = File.dirname(TOKEN_STORE_PATH)
         FileUtils.mkdir_p(token_store_dir) unless File.directory?(token_store_dir)
         token_store = Google::Auth::Stores::FileTokenStore.new(file: TOKEN_STORE_PATH)
-        Google::Auth::UserAuthorizer.new(@client_id, scope, token_store)
+        Google::Auth::UserAuthorizer.new(@client_id, SCOPES, token_store)
       end
     end
   end

@@ -9,11 +9,7 @@ require 'exif'
 require_relative 'lib/google_photos/auth'
 require_relative 'lib/google_photos/client'
 
-SCOPES = [
-  'https://www.googleapis.com/auth/photoslibrary.appendonly',
-  'https://www.googleapis.com/auth/photoslibrary.readonly.appcreateddata',
-  'https://www.googleapis.com/auth/photoslibrary.edit.appcreateddata'
-]
+CACHE_PATH = "tmp"
 
 def upload_to_new_album(client, photos, album_title, album_description = nil)
   puts "\nStarting upload process..."
@@ -57,7 +53,6 @@ config = JSON.parse(File.read('config.json'))
 credentials = GooglePhotos::Auth.new(
   config['clientId'],
   config['clientSecret'],
-  SCOPES
 ).authorize
 
 client = GooglePhotosClient.new(credentials)
@@ -67,6 +62,9 @@ flickr_albums = JSON.parse(File.read('flickr/albums.json'))
 album_title = "Arizona and Vegas"
 album = flickr_albums['albums'].find { |a| a['title'] == album_title }
 album_description = (album["description"] || "").gsub(/<\/?b>/, '')
+
+# Ensure cache exists
+FileUtils.mkdir_p("#{CACHE_PATH}/#{album["id"]}")
 
 photos = album["photos"].map do |photo_id|
   # Not sure why this happens sometimes
@@ -92,13 +90,12 @@ photos.each do |photo|
   photo["url"] = photo_url
 
   ext = File.extname(photo_url)
-  photo_file = "tmp/#{album["id"]}/#{photo_json["name"]}#{ext}"
+  photo_file = "#{CACHE_PATH}/#{album["id"]}/#{photo_json["name"]}#{ext}"
   photo["path"] = photo_file
 end
 
 photos.sort_by! { |p| p["path"] }
 
-FileUtils.mkdir_p("tmp/#{album["id"]}")
 photos.each do |photo|
   photo_url = photo["url"]
   photo_file = photo["path"]
