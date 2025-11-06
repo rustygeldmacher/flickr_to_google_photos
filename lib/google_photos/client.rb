@@ -26,7 +26,6 @@ class GooglePhotosClient
     response = http.request(request)
 
     if response.code == '200'
-      puts "✓ Photo uploaded successfully"
       response.body # This is the upload token
     else
       raise "Upload failed: #{response.code} - #{response.body}"

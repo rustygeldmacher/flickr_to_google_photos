@@ -24,7 +24,7 @@ def upload_to_new_album(client, photos, album_title, album_description = nil)
     file_path = photo["path"]
     print "  Uploading #{index + 1}/#{photos.length}: #{File.basename(file_path)}..."
     upload_token = client.upload_photo_bytes(file_path)
-    puts " ✓"
+    puts " OK"
     [upload_token, photo["description"]]
   end
 
@@ -62,7 +62,7 @@ client = GooglePhotosClient.new(credentials)
 
 # Load Flickr Albums
 flickr_albums = JSON.parse(File.read('flickr/albums.json'))
-album_title = "Camping at Niagara Falls"
+album_title = "Angel's Landing"
 album = flickr_albums['albums'].find { |a| a['title'] == album_title }
 album_description = (album["description"] || "").gsub(/<\/?b>/, '')
 
