@@ -22,3 +22,4 @@ module FlickrToGooglePhotos
 end
 
 require_relative 'cli/commands/import'
+require_relative 'cli/commands/albums'
