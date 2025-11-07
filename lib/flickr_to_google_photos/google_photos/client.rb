@@ -1,5 +1,6 @@
 class GooglePhotosClient
   BASE_URL = 'https://photoslibrary.googleapis.com/v1'
+  MAX_ITEMS_PER_BATCH_CREATE = 50
 
   attr_reader :credentials
 
@@ -93,50 +94,55 @@ class GooglePhotosClient
 
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = true
+    media_items_created = []
 
-    request = Net::HTTP::Post.new(uri)
-    credentials.apply!(request)
-    request['Content-Type'] = 'application/json'
+    upload_tokens_with_descriptions.each_slice(MAX_ITEMS_PER_BATCH_CREATE) do |batch|
+      request = Net::HTTP::Post.new(uri)
+      credentials.apply!(request)
+      request['Content-Type'] = 'application/json'
 
-    # Build array of new media items
-    new_media_items = upload_tokens_with_descriptions.map do |upload_token, description|
-      item = {
-        simpleMediaItem: {
-          uploadToken: upload_token
+      # Build array of new media items
+      new_media_items = batch.map do |upload_token, description|
+        item = {
+          simpleMediaItem: {
+            uploadToken: upload_token
+          }
         }
-      }
-      unless (description || "").empty?
-        item[:description] = description
-      end
-      item
-    end
-
-    request.body = JSON.generate({
-      albumId: album_id,
-      newMediaItems: new_media_items
-    })
-
-    response = http.request(request)
-
-    if response.code == '200'
-      result = JSON.parse(response.body)
-
-      # Check all results
-      results = result['newMediaItemResults']
-      successful = results.select { |r| r.dig('status', 'message') == 'Success' }
-      failed = results.select { |r| r.dig('status', 'message') != 'Success' }
-
-      puts "✓ #{successful.count} photo(s) added to album successfully"
-
-      if failed.any?
-        puts "⚠ #{failed.count} photo(s) failed to upload"
-        failed.each { |f| puts "  - #{f['status']['message']}" }
+        unless (description || "").empty?
+          item[:description] = description
+        end
+        item
       end
 
-      successful.map { |r| r['mediaItem'] }
-    else
-      raise "Batch create failed: #{response.code} - #{response.body}"
+      request.body = JSON.generate({
+        albumId: album_id,
+        newMediaItems: new_media_items
+      })
+
+      response = http.request(request)
+
+      if response.code == '200'
+        result = JSON.parse(response.body)
+
+        # Check all results
+        results = result['newMediaItemResults']
+        successful = results.select { |r| r.dig('status', 'message') == 'Success' }
+        failed = results.select { |r| r.dig('status', 'message') != 'Success' }
+
+        puts "✓ #{successful.count} photo(s) added to album successfully"
+
+        if failed.any?
+          puts "⚠ #{failed.count} photo(s) failed to upload"
+          failed.each { |f| puts "  - #{f['status']['message']}" }
+        end
+
+        media_items_created += successful.map { |r| r['mediaItem'] }
+      else
+        raise "Batch create failed: #{response.code} - #{response.body}"
+      end
     end
+
+    media_items_created
   end
 
   def list_albums(page_size: 50, &block)
