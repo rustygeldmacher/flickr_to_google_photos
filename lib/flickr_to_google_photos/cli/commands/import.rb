@@ -11,15 +11,30 @@ module FlickrToGooglePhotos::CLI::Commands
     def run
       # Parse command line options
       options = {
-        album: nil
+        album: nil,
+        next: false
       }
 
       OptionParser.new do |opts|
-        opts.banner = "Usage: #{$0} --album ALBUM_NAME"
+        opts.banner = "Usage: #{$0} [--next | --album ALBUM_NAME]"
+        opts.on("--next", "Import the next unimported album (default)") do
+          options[:next] = true
+        end
         opts.on("--album ALBUM_NAME", "Name or ID of Flickr album to import") do |album|
           options[:album] = album
         end
       end.parse!
+
+      # Validate mutual exclusion
+      if options[:next] && options[:album]
+        puts "Error: Cannot specify both --next and --album options"
+        return 1
+      end
+
+      # Set default to --next if no options specified
+      if !options[:next] && !options[:album]
+        options[:next] = true
+      end
 
       execute(options)
     end
@@ -107,9 +122,8 @@ module FlickrToGooglePhotos::CLI::Commands
     end
 
     def find_album_to_import(options)
-      album_name_or_id = options[:album]
       album = nil
-      if album_name_or_id.nil? || album_name_or_id.empty?
+      if options[:next]
         puts "Finding next unimported album to import..."
         imported_album_ids = Array(config['importedAlbums']).map { |album| album['flickrId'] }
         imported_albums = Set.new(imported_album_ids)
@@ -119,7 +133,8 @@ module FlickrToGooglePhotos::CLI::Commands
         if album.nil?
           puts "Error: No more albums to import"
         end
-      else
+      elsif options[:album]
+        album_name_or_id = options[:album]
         album = FlickrToGooglePhotos::Flickr::Albums.get_album(album_name_or_id)
         if album.nil?
           puts "Error: Album '#{album_name_or_id}' not found"
