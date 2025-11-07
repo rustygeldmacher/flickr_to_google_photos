@@ -13,6 +13,7 @@ require 'optparse'
 require_relative 'lib/google_photos/auth'
 require_relative 'lib/google_photos/client'
 require_relative 'lib/cli/commands/import'
+
 CACHE_PATH = "tmp"
 
 # Parse command line options
@@ -128,3 +129,13 @@ puts "Photos uploaded: #{result[:media_items].count}"
 result[:media_items].each_with_index do |item, idx|
   puts "  #{idx + 1}. #{item['filename']} (ID: #{item['id']})"
 end
+
+config['importedAlbums'] ||= []
+config['importedAlbums'] << {
+  "title" => album_title,
+  "flickrId" => album["id"],
+  "googlePhotosId" => result[:album]["id"]
+}
+
+json = JSON.pretty_generate(config)
+File.write('config.json', json)
