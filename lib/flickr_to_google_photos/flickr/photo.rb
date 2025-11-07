@@ -27,7 +27,10 @@ module FlickrToGooglePhotos
 
       def photo_json
         @photo_json ||= begin
-          photo_json_path = File.expand_path("../../../flickr/photo_#{id}.json", __dir__)
+          photo_json_path = File.join(
+            FlickrToGooglePhotos.config.flickr_data_path,
+            "photo_#{id}.json"
+          )
           JSON.parse(File.read(photo_json_path))
         end
       end

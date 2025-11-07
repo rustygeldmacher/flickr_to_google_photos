@@ -5,7 +5,15 @@ require 'fileutils'
 require 'exif'
 require 'optparse'
 
+require_relative 'flickr_to_google_photos/config'
+
 module FlickrToGooglePhotos
+  def self.config
+    @config ||= begin
+      config_file_path = File.join(Dir.pwd, "config.json")
+      FlickrToGooglePhotos::Config.new(config_file_path)
+    end
+  end
 end
 
 require_relative 'flickr_to_google_photos/google_photos/auth'

@@ -46,13 +46,6 @@ module FlickrToGooglePhotos::CLI::Commands
         return 1
       end
 
-      credentials = GooglePhotos::Auth.new(
-        config['clientId'],
-        config['clientSecret'],
-      ).authorize
-
-      client = GooglePhotosClient.new(credentials)
-
       puts "Uploading album: #{album.title}"
 
       cache_photos(album)
@@ -67,22 +60,22 @@ module FlickrToGooglePhotos::CLI::Commands
       puts "\n1. Uploading photo bytes..."
       upload_tokens_with_descriptions = album.photos.map.with_index do |photo, index|
         print "  Uploading #{index + 1}/#{album.photos.length}: #{photo.file_name}..."
-        upload_token = client.upload_photo_bytes(photo.physical_path)
+        upload_token = google_photos_client.upload_photo_bytes(photo.physical_path)
         puts " OK"
         [upload_token, photo.description]
       end
 
       puts "\n2. Creating album..."
-      gp_album = client.create_album(album.title)
+      gp_album = google_photos_client.create_album(album.title)
 
       # Add text enrichment if description provided
       unless album.description.nil? || album.description.empty?
         puts "\n3. Adding album description..."
-        client.add_text_enrichment(gp_album["id"], album.description)
+        google_photos_client.add_text_enrichment(gp_album["id"], album.description)
       end
 
       puts "\n#{album.description ? '4' : '3'}. Adding photos to album..."
-      media_items = client.create_media_items(upload_tokens_with_descriptions, gp_album["id"])
+      media_items = google_photos_client.create_media_items(upload_tokens_with_descriptions, gp_album["id"])
 
       puts "\n✅ Complete! Album ID: #{gp_album['id']}"
       if media_items.first && media_items.first['productUrl']
@@ -104,32 +97,25 @@ module FlickrToGooglePhotos::CLI::Commands
         puts "  #{idx + 1}. #{item['filename']} (ID: #{item['id']})"
       end
 
-      # Add this to Config class
-      config['importedAlbums'] ||= []
-      config['importedAlbums'] << {
-        "title" => album.title,
-        "flickrId" => album.id,
-        "googlePhotosId" => result[:album]["id"]
-      }
-
-      json = JSON.pretty_generate(config)
-      File.write('config.json', json)
+      FlickrToGooglePhotos.config.track_imported_album(
+        title: album.title,
+        flickrAlbumId: album.id,
+        googlePhotosAlbumId: result[:album]["id"]
+      )
     end
 
-    def config
-      # TODO: Make this a class FlickrToGooglePhotos::Config
-      @config ||= JSON.parse(File.read('config.json'))
+    def google_photos_client
+      @google_photos_client ||= begin
+        credentials = GooglePhotos::Auth.new.authorize
+        GooglePhotosClient.new(credentials)
+      end
     end
 
     def find_album_to_import(options)
       album = nil
       if options[:next]
         puts "Finding next unimported album to import..."
-        imported_album_ids = Array(config['importedAlbums']).map { |album| album['flickrId'] }
-        imported_albums = Set.new(imported_album_ids)
-        album = FlickrToGooglePhotos::Flickr::Albums.find do |album|
-          !imported_albums.include?(album.id)
-        end
+        album = FlickrToGooglePhotos::Flickr::Albums.next_unimported_album
         if album.nil?
           puts "Error: No more albums to import"
         end

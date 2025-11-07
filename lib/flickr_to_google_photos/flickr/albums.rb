@@ -9,8 +9,13 @@ module FlickrToGooglePhotos
         end
       end
 
+      def self.next_unimported_album
+        album = find do |album|
+          !FlickrToGooglePhotos.config.imported_album_ids.include?(album.id)
+        end
+      end
+
       def self.get_album(album_name_or_id)
-        # Load Flickr Albums
         album_json = albums_json.find do |a|
           [a['title'], a['id']].include?(album_name_or_id)
         end
@@ -21,8 +26,11 @@ module FlickrToGooglePhotos
 
       def self.albums_json
         @albums_json ||= begin
-          flickr_albums_path = File.expand_path('../../../flickr/albums.json', __dir__)
-          JSON.parse(File.read(flickr_albums_path))['albums']
+          flickr_albums_path = File.join(
+            FlickrToGooglePhotos.config.flickr_data_path,
+            "albums.json"
+          )
+          JSON.parse(File.read(flickr_albums_path))["albums"]
         end
       end
     end

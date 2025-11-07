@@ -11,8 +11,10 @@ module GooglePhotos
     ]
     TOKEN_STORE_PATH = '.google_photos_tokens.yaml'
 
-    def initialize(client_id, client_secret)
-      @client_id = Google::Auth::ClientId.new(client_id, client_secret)
+    def initialize(google_client_id: nil, google_client_secret: nil)
+      google_client_id ||= FlickrToGooglePhotos.config.google_client_id
+      google_client_secret ||= FlickrToGooglePhotos.config.google_client_secret
+      @client_id = Google::Auth::ClientId.new(google_client_id, google_client_secret)
     end
 
     def authorize
