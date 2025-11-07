@@ -8,62 +8,38 @@ require 'uri'
 require 'json'
 require 'fileutils'
 require 'exif'
+require 'optparse'
 
 require_relative 'lib/google_photos/auth'
 require_relative 'lib/google_photos/client'
-
+require_relative 'lib/cli/commands/import'
 CACHE_PATH = "tmp"
 
-def upload_to_new_album(client, photos, album_title, album_description = nil)
-  puts "\nStarting upload process..."
-  puts "Photos to upload: #{photos.length}"
+# Parse command line options
+options = {}
 
-  # Upload all photos and collect tokens
-  puts "\n1. Uploading photo bytes..."
-  upload_tokens_with_descriptions = photos.map.with_index do |photo, index|
-    file_path = photo["path"]
-    print "  Uploading #{index + 1}/#{photos.length}: #{File.basename(file_path)}..."
-    upload_token = client.upload_photo_bytes(file_path)
-    puts " OK"
-    [upload_token, photo["description"]]
+OptionParser.new do |opts|
+  opts.banner = "Usage: #{$0} --album ALBUM_NAME"
+  opts.on("--album ALBUM_NAME", "Name or ID of Flickr album to import") do |album|
+    options[:album] = album
   end
+end.parse!
 
-  puts "\n2. Creating album..."
-  album = client.create_album(album_title)
-
-  # Add text enrichment if description provided
-  unless album_description.nil? || album_description.empty?
-    puts "\n3. Adding album description..."
-    client.add_text_enrichment(album['id'], album_description)
-  end
-
-  puts "\n#{album_description ? '4' : '3'}. Adding photos to album..."
-  media_items = client.create_media_items(upload_tokens_with_descriptions, album['id'])
-
-  puts "\n✅ Complete! Album ID: #{album['id']}"
-  if media_items.first && media_items.first['productUrl']
-    puts "Album URL: #{media_items.first['productUrl'].split('/').first(4).join('/')}"
-  end
-
-  {
-    album: album,
-    media_items: media_items
-  }
+if options[:album].nil?
+  puts "Error: --album option is required"
+  exit 1
 end
-
-# Load configuration
-config = JSON.parse(File.read('config.json'))
-credentials = GooglePhotos::Auth.new(
-  config['clientId'],
-  config['clientSecret'],
-).authorize
-
-client = GooglePhotosClient.new(credentials)
 
 # Load Flickr Albums
 flickr_albums = JSON.parse(File.read('flickr/albums.json'))
-album_title = "Angel's Landing"
-album = flickr_albums['albums'].find { |a| a['title'] == album_title }
+album = flickr_albums['albums'].find { |a| [a['title'], a['id']].include?(options[:album]) }
+
+if album.nil?
+  puts "Error: Album '#{options[:album]}' not found"
+  exit 1
+end
+
+album_title = album["title"]
 album_description = (album["description"] || "").gsub(/<\/?b>/, '')
 
 # Ensure cache exists
@@ -77,6 +53,15 @@ photos = album["photos"].map do |photo_id|
     "id" => photo_id,
   }
 end.compact
+
+# Load configuration
+config = JSON.parse(File.read('config.json'))
+credentials = GooglePhotos::Auth.new(
+  config['clientId'],
+  config['clientSecret'],
+).authorize
+
+client = GooglePhotosClient.new(credentials)
 
 puts "Uploading album: #{album["title"]}"
 puts "Caching #{photos.count} photos locally..."
@@ -127,12 +112,12 @@ if continue != "y"
   exit
 end
 
-result = upload_to_new_album(
-  client,
-  photos,
-  album_title,
-  album_description
-)
+result = Flicker2GooglePhotos::Import.new(
+  client:,
+  photos:,
+  album_title:,
+  album_description:
+).execute
 
 puts "\n" + "="*60
 puts "SUCCESS!"
