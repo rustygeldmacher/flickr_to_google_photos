@@ -69,7 +69,7 @@ module FlickrToGooglePhotos::CLI::Commands
       gp_album = google_photos_client.create_album(album.title)
 
       # Add text enrichment if description provided
-      unless album.description.nil? || album.description.empty?
+      unless (album.description || "").empty?
         puts "\n3. Adding album description..."
         google_photos_client.add_text_enrichment(gp_album["id"], album.description)
       end
@@ -78,9 +78,7 @@ module FlickrToGooglePhotos::CLI::Commands
       media_items = google_photos_client.create_media_items(upload_tokens_with_descriptions, gp_album["id"])
 
       puts "\n✅ Complete! Album ID: #{gp_album['id']}"
-      if media_items.first && media_items.first['productUrl']
-        puts "Album URL: #{media_items.first['productUrl'].split('/').first(4).join('/')}"
-      end
+      puts "Album URL: #{gp_album["productUrl"]}"
 
       result = {
         album: gp_album,

@@ -5,7 +5,6 @@ require 'fileutils'
 require 'exif'
 require 'optparse'
 
-require_relative 'flickr_to_google_photos/config'
 
 module FlickrToGooglePhotos
   def self.config
@@ -16,6 +15,8 @@ module FlickrToGooglePhotos
   end
 end
 
+require_relative 'flickr_to_google_photos/config'
+require_relative 'flickr_to_google_photos/util/string_utils'
 require_relative 'flickr_to_google_photos/google_photos/auth'
 require_relative 'flickr_to_google_photos/google_photos/client'
 require_relative 'flickr_to_google_photos/flickr/photo'

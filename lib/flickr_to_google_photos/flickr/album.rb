@@ -14,7 +14,7 @@ module FlickrToGooglePhotos
       end
 
       def description
-        @description ||= (@json['description'] || "").gsub(/<\/?b>/, '')
+        @description ||= Util::StringUtils.strip_html_tags(@json['description'])
       end
 
       def photos

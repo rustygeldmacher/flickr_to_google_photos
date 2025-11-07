@@ -16,7 +16,7 @@ module FlickrToGooglePhotos
       end
 
       def description
-        photo_json["description"]
+        @description ||= Util::StringUtils.strip_html_tags(photo_json["description"])
       end
 
       def url
