@@ -1,6 +1,14 @@
 module FlickrToGooglePhotos
   module Flickr
     module Albums
+      extend Enumerable
+
+      def self.each
+        albums_json.each do |album_json|
+          yield Flickr::Album.new(album_json)
+        end
+      end
+
       def self.get_album(album_name_or_id)
         # Load Flickr Albums
         album_json = albums_json.find do |a|

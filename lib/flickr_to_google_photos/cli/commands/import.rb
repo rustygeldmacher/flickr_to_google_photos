@@ -10,7 +10,9 @@ module FlickrToGooglePhotos::CLI::Commands
 
     def run
       # Parse command line options
-      options = {}
+      options = {
+        album: nil
+      }
 
       OptionParser.new do |opts|
         opts.banner = "Usage: #{$0} --album ALBUM_NAME"
@@ -19,25 +21,16 @@ module FlickrToGooglePhotos::CLI::Commands
         end
       end.parse!
 
-      if options[:album].nil?
-        puts "Error: --album option is required"
-        return 1
-      end
-
       execute(options)
     end
 
     def execute(options)
-      album = FlickrToGooglePhotos::Flickr::Albums.get_album(options[:album])
+      album = find_album_to_import(options)
 
       if album.nil?
-        puts "Error: Album '#{options[:album]}' not found"
         return 1
       end
 
-      # Load configuration
-      # TODO: Make this a class FlickrToGooglePhotos::Config
-      config = JSON.parse(File.read('config.json'))
       credentials = GooglePhotos::Auth.new(
         config['clientId'],
         config['clientSecret'],
@@ -106,6 +99,33 @@ module FlickrToGooglePhotos::CLI::Commands
 
       json = JSON.pretty_generate(config)
       File.write('config.json', json)
+    end
+
+    def config
+      # TODO: Make this a class FlickrToGooglePhotos::Config
+      @config ||= JSON.parse(File.read('config.json'))
+    end
+
+    def find_album_to_import(options)
+      album_name_or_id = options[:album]
+      album = nil
+      if album_name_or_id.nil? || album_name_or_id.empty?
+        puts "Finding next unimported album to import..."
+        imported_album_ids = Array(config['importedAlbums']).map { |album| album['flickrId'] }
+        imported_albums = Set.new(imported_album_ids)
+        album = FlickrToGooglePhotos::Flickr::Albums.find do |album|
+          !imported_albums.include?(album.id)
+        end
+        if album.nil?
+          puts "Error: No more albums to import"
+        end
+      else
+        album = FlickrToGooglePhotos::Flickr::Albums.get_album(album_name_or_id)
+        if album.nil?
+          puts "Error: Album '#{album_name_or_id}' not found"
+        end
+      end
+      album
     end
 
     def cache_photos(album)
