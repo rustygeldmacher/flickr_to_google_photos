@@ -24,6 +24,15 @@ module FlickrToGooglePhotos
       Set.new(imported_albums.map { |album| album["flickrId"] })
     end
 
+    def ignored_album_ids
+      Set.new(ignored_albums)
+    end
+
+    def ignore_album(album_id)
+      ignored_albums << album_id unless ignored_albums.include?(album_id)
+      save!
+    end
+
     def track_imported_album(title:, flickrAlbumId:, googlePhotosAlbumId:)
       imported_albums << {
         "title" => title,
@@ -42,6 +51,10 @@ module FlickrToGooglePhotos
 
     def imported_albums
       config_json["importedAlbums"] ||= []
+    end
+
+    def ignored_albums
+      config_json["ignoredAlbums"] ||= []
     end
 
     def config_json

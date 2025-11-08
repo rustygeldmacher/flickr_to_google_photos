@@ -11,7 +11,8 @@ module FlickrToGooglePhotos
 
       def self.next_unimported_album
         album = find do |album|
-          !FlickrToGooglePhotos.config.imported_album_ids.include?(album.id)
+          !FlickrToGooglePhotos.config.imported_album_ids.include?(album.id) &&
+          !FlickrToGooglePhotos.config.ignored_album_ids.include?(album.id)
         end
       end
 
