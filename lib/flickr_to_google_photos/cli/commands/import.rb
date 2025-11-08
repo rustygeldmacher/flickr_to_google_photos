@@ -1,3 +1,5 @@
+require 'tty-screen'
+
 module FlickrToGooglePhotos::CLI::Commands
   class Import
     CACHE_PATH = "tmp"
@@ -182,6 +184,19 @@ module FlickrToGooglePhotos::CLI::Commands
     end
 
     def show_files_and_confirm(album)
+      # Calculate dynamic column widths
+      terminal_width = TTY::Screen.width rescue 80
+      filename_width = album.photos.map(&:file_name).max_by(&:length).length
+      date_width = 20
+
+      # Account for table borders, padding, and separators
+      # Unicode table uses: |<space>content<space>|<space>content<space>|<space>content<space>|
+      table_overhead = 8  # 3 separators + 6 spaces for padding
+      description_width = terminal_width - filename_width - date_width - table_overhead
+
+      # Ensure minimum widths
+      description_width = [description_width, 20].max
+
       table_data = album.photos.each_with_object([]) do |photo, data|
         File.open(photo.physical_path) do |f|
           date_taken = nil
@@ -191,15 +206,22 @@ module FlickrToGooglePhotos::CLI::Commands
           rescue
             # Missing or corrupted EXIF data
           end
+
+          # Format each field to exact column width
+          description = photo.description || ""
+          if description.length > description_width
+            description = description[0, description_width - 4] + "..."
+          end
+
           data << [
             photo.file_name,
             date_taken,
-            photo.description
+            description
           ]
         end
       end
 
-      # Create and display table
+      # Create and display table with pre-formatted content
       table = TTY::Table.new(
         header: ['Filename', 'Date', 'Description'],
         rows: table_data

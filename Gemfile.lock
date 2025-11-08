@@ -68,6 +68,7 @@ DEPENDENCIES
   exif
   googleauth
   tty-progressbar
+  tty-screen
   tty-table
 
 BUNDLED WITH
