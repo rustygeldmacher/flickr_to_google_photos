@@ -2,7 +2,7 @@ module FlickrToGooglePhotos
   module Flickr
     class Photo
       attr_reader :id
-      attr_accessor :physical_path
+      attr_accessor :physical_path, :upload_token, :media_item
 
       def initialize(id)
         @id = id

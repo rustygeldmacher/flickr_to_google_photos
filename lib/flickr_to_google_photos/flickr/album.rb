@@ -17,6 +17,18 @@ module FlickrToGooglePhotos
         @description ||= Util::StringUtils.strip_html_tags(@json['description'])
       end
 
+      def cover_photo
+        return nil unless @json['cover_photo']
+
+        @cover_photo_id ||= begin
+          match = @json['cover_photo'].match(%r{/photos/[^/]+/(\d+)})
+          cover_photo_id = match ? match[1] : nil
+          if cover_photo_id
+            photos.find { |photo| photo.id == cover_photo_id }
+          end
+        end
+      end
+
       def status
         config = FlickrToGooglePhotos.config
         if config.imported_album_ids.include?(id)

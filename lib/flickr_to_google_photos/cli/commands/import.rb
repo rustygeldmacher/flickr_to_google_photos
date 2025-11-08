@@ -9,7 +9,6 @@ module FlickrToGooglePhotos::CLI::Commands
     end
 
     def run
-      # Parse command line options
       options = {
         album: nil,
         next: false
@@ -46,14 +45,17 @@ module FlickrToGooglePhotos::CLI::Commands
         return 1
       end
 
-      puts "Importing album: #{album.title}"
+      header = "Importing album: #{album.title}"
+      puts header
+      puts "=" * header.size
+      puts
 
       cache_photos(album)
       unless show_files_and_confirm(album)
         return 1
       end
 
-      upload_tokens_with_descriptions = upload_photos(album)
+      upload_photos(album)
 
       puts "\n2. Creating album..."
       gp_album = google_photos_client.create_album(album.title)
@@ -65,26 +67,22 @@ module FlickrToGooglePhotos::CLI::Commands
       end
 
       puts "\n#{album.description ? '4' : '3'}. Adding photos to album..."
-      media_items = google_photos_client.create_media_items(upload_tokens_with_descriptions, gp_album["id"])
+      google_photos_client.create_media_items(album, gp_album["id"])
 
-      puts "\n✅ Complete!"
+      # Set album cover if Flickr album has one
+      set_album_cover(album, gp_album["id"])
 
-      result = {
-        album: gp_album,
-        media_items: media_items
-      }
-
-      puts "\n" + "="*60
-      puts "SUCCESS!"
-      puts "Album Title: #{result[:album]['title']}"
-      puts "Album URL: #{gp_album["productUrl"]}"
-      puts "Photos uploaded: #{result[:media_items].count}"
-      puts "="*60
+      puts "\n" + "=" * 60
+      puts "✅ SUCCESS!"
+      puts "* Album Title: #{gp_album['title']}"
+      puts "* Album URL: #{gp_album["productUrl"]}"
+      puts "* Photos uploaded: #{album.photos.count}"
+      puts "=" * 60
 
       FlickrToGooglePhotos.config.track_imported_album(
         title: album.title,
         flickrAlbumId: album.id,
-        googlePhotosAlbumId: result[:album]["id"]
+        googlePhotosAlbumId: gp_album["id"]
       )
     end
 
@@ -165,10 +163,11 @@ module FlickrToGooglePhotos::CLI::Commands
         bar_format: :block
       )
 
-      upload_tokens_with_descriptions = album.photos.map.with_index do |photo, index|
+      album.photos.each.with_index do |photo, index|
         progress_bar.advance(0, title: photo.file_name)
 
         upload_token = google_photos_client.upload_photo_bytes(photo.physical_path)
+
 
         if (index + 1) < album.photos.size
           progress_bar.advance
@@ -176,21 +175,25 @@ module FlickrToGooglePhotos::CLI::Commands
           progress_bar.advance(title: "Done!")
         end
 
-        [upload_token, photo.description]
+        photo.upload_token = upload_token
       end
 
       progress_bar.finish
-
-      upload_tokens_with_descriptions
     end
 
     def show_files_and_confirm(album)
       table_data = album.photos.each_with_object([]) do |photo, data|
         File.open(photo.physical_path) do |f|
-          exif = Exif::Data.new(f)
+          date_taken = nil
+          begin
+            exif = Exif::Data.new(f)
+            date_taken = exif.date_time_original
+          rescue
+            # Missing or corrupted EXIF data
+          end
           data << [
             photo.file_name,
-            exif.date_time_original,
+            date_taken,
             photo.description
           ]
         end
@@ -213,6 +216,27 @@ module FlickrToGooglePhotos::CLI::Commands
       end
 
       return true
+    end
+
+    def set_album_cover(album, google_album_id)
+      cover_photo = album.cover_photo
+      return unless cover_photo
+
+      puts "\n#{album.description ? '5' : '4'}. Setting album cover..."
+
+      if cover_photo.media_item
+        begin
+          google_photos_client.update_album_cover(
+            google_album_id,
+            cover_photo.media_item.dig("mediaItem", "id")
+          )
+          puts "✓ Album cover photo set"
+        rescue => e
+          puts "⚠ Failed to set album cover: #{e.message}"
+        end
+      else
+        puts "⚠ Cover photo not found in uploaded photos"
+      end
     end
   end
 end

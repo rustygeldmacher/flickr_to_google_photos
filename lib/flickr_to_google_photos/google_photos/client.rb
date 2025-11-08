@@ -89,33 +89,33 @@ class GooglePhotosClient
     end
   end
 
-  def create_media_items(upload_tokens_with_descriptions, album_id)
+  def create_media_items(flickr_album, gp_album_id)
     uri = URI("#{BASE_URL}/mediaItems:batchCreate")
 
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = true
     media_items_created = []
 
-    upload_tokens_with_descriptions.each_slice(MAX_ITEMS_PER_BATCH_CREATE) do |batch|
+    flickr_album.photos.each_slice(MAX_ITEMS_PER_BATCH_CREATE) do |batch|
       request = Net::HTTP::Post.new(uri)
       credentials.apply!(request)
       request['Content-Type'] = 'application/json'
 
       # Build array of new media items
-      new_media_items = batch.map do |upload_token, description|
+      new_media_items = batch.map do |photo|
         item = {
           simpleMediaItem: {
-            uploadToken: upload_token
+            uploadToken: photo.upload_token
           }
         }
-        unless (description || "").empty?
-          item[:description] = description
+        unless (photo.description || "").empty?
+          item[:description] = photo.description
         end
         item
       end
 
       request.body = JSON.generate({
-        albumId: album_id,
+        albumId: gp_album_id,
         newMediaItems: new_media_items
       })
 
@@ -136,13 +136,35 @@ class GooglePhotosClient
           failed.each { |f| puts "  - #{f['status']['message']}" }
         end
 
-        media_items_created += successful.map { |r| r['mediaItem'] }
+        results.each_with_index do |media_item, index|
+          batch[index].media_item = media_item
+        end
       else
         raise "Batch create failed: #{response.code} - #{response.body}"
       end
     end
+  end
 
-    media_items_created
+  def update_album_cover(album_id, media_item_id)
+    uri = URI("#{BASE_URL}/albums/#{album_id}?updateMask=coverPhotoMediaItemId")
+
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.use_ssl = true
+
+    request = Net::HTTP::Patch.new(uri)
+    credentials.apply!(request)
+    request['Content-Type'] = 'application/json'
+    request.body = JSON.generate({
+      coverPhotoMediaItemId: media_item_id
+    })
+
+    response = http.request(request)
+
+    if response.code == '200'
+      JSON.parse(response.body)
+    else
+      raise "Update album cover failed: #{response.code} - #{response.body}"
+    end
   end
 
   def list_albums(page_size: 50, &block)
