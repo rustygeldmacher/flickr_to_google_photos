@@ -45,10 +45,10 @@ module GooglePhotos
       else
         # Refresh if expired
         if credentials.expired?
-          puts "Refreshing expired credentials..."
+          # puts "Refreshing expired credentials..."
           credentials.refresh!
         end
-        puts "✓ Using existing credentials"
+        # puts "✓ Using existing credentials"
       end
 
       credentials

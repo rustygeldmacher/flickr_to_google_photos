@@ -5,6 +5,8 @@ require 'fileutils'
 require 'exif'
 require 'optparse'
 
+require 'tty-table'
+require 'tty-progressbar'
 
 module FlickrToGooglePhotos
   def self.config

@@ -46,24 +46,14 @@ module FlickrToGooglePhotos::CLI::Commands
         return 1
       end
 
-      puts "Uploading album: #{album.title}"
+      puts "Importing album: #{album.title}"
 
       cache_photos(album)
       unless show_files_and_confirm(album)
         return 1
       end
 
-      puts "\nStarting upload process..."
-      puts "Photos to upload: #{album.photos.length}"
-
-      # Upload all photos and collect tokens
-      puts "\n1. Uploading photo bytes..."
-      upload_tokens_with_descriptions = album.photos.map.with_index do |photo, index|
-        print "  Uploading #{index + 1}/#{album.photos.length}: #{photo.file_name}..."
-        upload_token = google_photos_client.upload_photo_bytes(photo.physical_path)
-        puts " OK"
-        [upload_token, photo.description]
-      end
+      upload_tokens_with_descriptions = upload_photos(album)
 
       puts "\n2. Creating album..."
       gp_album = google_photos_client.create_album(album.title)
@@ -77,8 +67,7 @@ module FlickrToGooglePhotos::CLI::Commands
       puts "\n#{album.description ? '4' : '3'}. Adding photos to album..."
       media_items = google_photos_client.create_media_items(upload_tokens_with_descriptions, gp_album["id"])
 
-      puts "\n✅ Complete! Album ID: #{gp_album['id']}"
-      puts "Album URL: #{gp_album["productUrl"]}"
+      puts "\n✅ Complete!"
 
       result = {
         album: gp_album,
@@ -87,13 +76,10 @@ module FlickrToGooglePhotos::CLI::Commands
 
       puts "\n" + "="*60
       puts "SUCCESS!"
-      puts "="*60
-      puts "Album ID: #{result[:album]['id']}"
       puts "Album Title: #{result[:album]['title']}"
+      puts "Album URL: #{gp_album["productUrl"]}"
       puts "Photos uploaded: #{result[:media_items].count}"
-      result[:media_items].each_with_index do |item, idx|
-        puts "  #{idx + 1}. #{item['filename']} (ID: #{item['id']})"
-      end
+      puts "="*60
 
       FlickrToGooglePhotos.config.track_imported_album(
         title: album.title,
@@ -112,7 +98,6 @@ module FlickrToGooglePhotos::CLI::Commands
     def find_album_to_import(options)
       album = nil
       if options[:next]
-        puts "Finding next unimported album to import..."
         album = FlickrToGooglePhotos::Flickr::Albums.next_unimported_album
         if album.nil?
           puts "Error: No more albums to import"
@@ -127,36 +112,102 @@ module FlickrToGooglePhotos::CLI::Commands
       album
     end
 
+    # TODO: Extract to class FlickrToGooglePhotos::Flickr::AlbumCache
     def cache_photos(album)
-      # TODO: Extract to class FlickrToGooglePhotos::Flickr::AlbumCache
-      puts "Caching #{album.photos.count} photos locally..."
-
       # Ensure cache exists
       FileUtils.mkdir_p("#{CACHE_PATH}/#{album.id}")
 
+      # First, determine which photos need to be downloaded
+      photos_to_download = []
       album.photos.each do |photo|
         photo.physical_path = "#{CACHE_PATH}/#{album.id}/#{photo.file_name}"
+        photos_to_download << photo unless File.exist?(photo.physical_path)
+      end
 
-        unless File.exist?(photo.physical_path)
-          puts "Downloading #{photo.file_name} (#{photo.url})"
-          File.open(photo.physical_path, 'wb') do |file|
-            file.write(Net::HTTP.get(URI(photo.url)))
-          end
+      # If no photos need downloading, we're done
+      if photos_to_download.empty?
+        puts "All photos are already downloaded."
+        return
+      end
+
+      puts "Downloading #{album.photos.count} photos..."
+
+      # Create progress bar for downloads
+      progress_bar = TTY::ProgressBar.new(
+        "Downloading [:bar] :current/:total :percent :title",
+        total: photos_to_download.length,
+        bar_format: :block
+      )
+
+      photos_to_download.each.with_index do |photo, i|
+        progress_bar.advance(0, title: photo.file_name)
+
+        File.open(photo.physical_path, 'wb') do |file|
+          file.write(Net::HTTP.get(URI(photo.url)))
+        end
+
+        if (i + 1) < photos_to_download.size
+          progress_bar.advance
+        else
+          progress_bar.advance(title: "Done!")
         end
       end
+
+      progress_bar.finish
+    end
+
+    def upload_photos(album)
+      puts "1. Uploading photos..."
+
+      progress_bar = TTY::ProgressBar.new(
+        "Uploading [:bar] :current/:total :percent :title",
+        total: album.photos.size,
+        bar_format: :block
+      )
+
+      upload_tokens_with_descriptions = album.photos.map.with_index do |photo, index|
+        progress_bar.advance(0, title: photo.file_name)
+
+        upload_token = google_photos_client.upload_photo_bytes(photo.physical_path)
+
+        if (index + 1) < album.photos.size
+          progress_bar.advance
+        else
+          progress_bar.advance(title: "Done!")
+        end
+
+        [upload_token, photo.description]
+      end
+
+      progress_bar.finish
+
+      upload_tokens_with_descriptions
     end
 
     def show_files_and_confirm(album)
-      album.photos.each do |photo|
+      table_data = album.photos.each_with_object([]) do |photo, data|
         File.open(photo.physical_path) do |f|
           exif = Exif::Data.new(f)
-          puts "* #{photo.physical_path} taken #{exif.date_time_original} - #{photo.description}"
+          data << [
+            photo.file_name,
+            exif.date_time_original,
+            photo.description
+          ]
         end
       end
 
-      puts "Files ready to upload, continue? (y/n)"
+      # Create and display table
+      table = TTY::Table.new(
+        header: ['Filename', 'Date', 'Description'],
+        rows: table_data
+      )
+
+      puts table.render(:unicode, padding: [0, 1])
+
+      puts "#{album.photos.size} files ready to upload, continue? (Y/n)"
+
       continue = gets.chomp
-      if continue != "y"
+      if !["y", ""].include?(continue)
         puts "Exiting..."
         return false
       end

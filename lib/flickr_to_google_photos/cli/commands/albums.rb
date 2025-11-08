@@ -1,6 +1,3 @@
-require 'optparse'
-require 'tty-table'
-
 module FlickrToGooglePhotos::CLI::Commands
   class Albums
     attr_reader :argv
