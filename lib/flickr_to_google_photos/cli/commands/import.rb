@@ -38,6 +38,22 @@ module FlickrToGooglePhotos::CLI::Commands
       end
 
       execute(options)
+    rescue GooglePhotos::Auth::NotAuthenticated
+      puts <<~MESSAGE
+
+
+        Error: Not authenticated with Google Photos!
+        ============================================
+
+        To authenticate with Google Photos, make sure you've got your client ID
+        and client secret configured in config.json, and then run:
+
+        #{$0} auth
+
+        Which will run through the Google Photos OAuth flow and save your
+        credentials.
+      MESSAGE
+      return 1
     end
 
     def execute(options)
@@ -169,7 +185,6 @@ module FlickrToGooglePhotos::CLI::Commands
         progress_bar.advance(0, title: photo.file_name)
 
         upload_token = google_photos_client.upload_photo_bytes(photo.physical_path)
-
 
         if (index + 1) < album.photos.size
           progress_bar.advance

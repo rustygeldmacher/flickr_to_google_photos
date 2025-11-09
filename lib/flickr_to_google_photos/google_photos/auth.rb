@@ -3,6 +3,9 @@ require 'googleauth/stores/file_token_store'
 
 module GooglePhotos
   class Auth
+    class NotAuthenticated < StandardError; end
+
+    USER_ID = 'default'
     OOB_URI = 'urn:ietf:wg:oauth:2.0:oob'
     SCOPES = [
       'https://www.googleapis.com/auth/photoslibrary.appendonly',
@@ -18,41 +21,35 @@ module GooglePhotos
     end
 
     def authorize
-      user_id = 'default'
-
       # Try to load existing credentials
-      credentials = authorizer.get_credentials(user_id)
+      credentials = authorizer.get_credentials(USER_ID)
 
       if credentials.nil?
-        puts "\n" + "="*60
-        puts "AUTHORIZATION REQUIRED"
-        puts "="*60
-        puts "\nVisit this URL to authorize the application:\n\n"
+        raise NotAuthenticated
+      end
 
-        url = authorizer.get_authorization_url(base_url: OOB_URI)
-        puts url
-
-        puts "\nEnter the authorization code: "
-        code = gets.chomp
-
-        credentials = authorizer.get_and_store_credentials_from_code(
-          user_id: user_id,
-          code: code,
-          base_url: OOB_URI
-        )
-
-        puts "\n✓ Authorization successful! Credentials saved."
-      else
-        # Refresh if expired
-        if credentials.expired?
-          # puts "Refreshing expired credentials..."
-          credentials.refresh!
-        end
-        # puts "✓ Using existing credentials"
+      # Refresh if expired
+      if credentials.expired?
+        credentials.refresh!
       end
 
       credentials
     end
+
+    # Use the code to generate and save a token into the token store
+    def save_authorization_code(code)
+      authorizer.get_and_store_credentials_from_code(
+        user_id: USER_ID,
+        code: code,
+        base_url: OOB_URI
+      )
+    end
+
+    def authorization_url
+      authorizer.get_authorization_url(base_url: OOB_URI)
+    end
+
+    private
 
     def authorizer
       @authorizer ||= begin

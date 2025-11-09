@@ -133,7 +133,12 @@ class GooglePhotosClient
 
         if failed.any?
           puts "⚠ #{failed.count} photo(s) failed to upload"
-          failed.each { |f| puts "  - #{f['status']['message']}" }
+          failed.each do |f|
+            puts "  - #{f['status']['message']}"
+            failed_upload_token = f["uploadToken"]
+            photo = batch.find { |photo| photo.upload_token == failed_upload_token }
+            puts "- Photo: #{photo.file_name}"
+          end
         end
 
         results.each_with_index do |media_item, index|
