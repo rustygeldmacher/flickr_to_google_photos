@@ -1,0 +1,5 @@
+#!/usr/bin/env ruby
+
+require 'flickr_to_google_photos'
+
+exit FlickrToGooglePhotos::CLI.new.start(ARGV)

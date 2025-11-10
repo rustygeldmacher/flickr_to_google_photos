@@ -8,6 +8,8 @@ require 'optparse'
 require 'tty-table'
 require 'tty-progressbar'
 
+require_relative 'flickr_to_google_photos/version'
+
 module FlickrToGooglePhotos
   def self.config
     @config ||= begin

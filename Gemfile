@@ -1,7 +1,4 @@
 source "https://rubygems.org"
 
-gem "googleauth"
-gem "exif"
-gem "tty-table"
-gem "tty-progressbar"
-gem "tty-screen"
+# Specify your gem's dependencies in flickr_to_google_photos.gemspec
+gemspec
