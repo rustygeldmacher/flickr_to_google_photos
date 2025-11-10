@@ -3,8 +3,9 @@ module FlickrToGooglePhotos
     def start(argv)
       command_name = argv.shift
 
-      if command_name.nil?
-        # print help message
+      # Handle global help when no command provided or when first argument is --help
+      if [nil, "--help", "-h"].include?(command_name)
+        print_help_message
         return 0
       end
 
@@ -12,11 +13,33 @@ module FlickrToGooglePhotos
         FlickrToGooglePhotos::CLI::Commands.const_get(command_name.capitalize)
       rescue NameError
         puts "Error: Unknown command: #{command_name}"
-        # print help message
+        puts
+        print_help_message
         return 1
       end
 
       command_class.new(argv).run
+    end
+
+    private
+
+    def print_help_message
+      puts <<~HELP
+        FlickrToGooglePhotos - Move your Flickr photo albums into Google Photos
+
+        USAGE:
+            f2gp <command> [options]
+
+        COMMANDS:
+            auth      Authenticate with Google Photos
+            import    Import Flickr albums to Google Photos
+            albums    List and manage Flickr albums
+
+        OPTIONS:
+            -h, --help    Show this help message
+
+        Run 'f2gp <command> --help' for more information about a specific command.
+      HELP
     end
   end
 end

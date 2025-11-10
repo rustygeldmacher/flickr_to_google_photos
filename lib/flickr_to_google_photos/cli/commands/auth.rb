@@ -1,3 +1,5 @@
+require 'optparse'
+
 module FlickrToGooglePhotos::CLI::Commands
   class Auth
     attr_reader :argv
@@ -7,6 +9,25 @@ module FlickrToGooglePhotos::CLI::Commands
     end
 
     def run
+      # Parse command line options
+      OptionParser.new do |opts|
+        opts.banner = "Usage: #{$0} auth [options]"
+        opts.separator ""
+        opts.separator "Authenticate with Google Photos API to enable importing albums."
+        opts.separator ""
+        opts.separator "This command will:"
+        opts.separator "  1. Check for existing saved credentials"
+        opts.separator "  2. If none found, open a browser authorization flow"
+        opts.separator "  3. Save the authorization for future use"
+        opts.separator ""
+        opts.separator "Options:"
+
+        opts.on("-h", "--help", "Show this help message") do
+          puts opts
+          return 0
+        end
+      end.parse!(argv)
+
       google_auth = GooglePhotos::Auth.new
 
       begin

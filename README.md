@@ -1,6 +1,6 @@
 # flickr_to_google_photos
 
-Flickr2GooglePhotos is a command line utility that helps you move your Flickr
+FlickrToGooglePhotos is a command line utility that helps you move your Flickr
 photo albums into Google Photos.
 
 It works by using your Flickr account's metadata to download each of your photos,

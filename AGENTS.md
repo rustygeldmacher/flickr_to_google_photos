@@ -1,7 +1,7 @@
 # AGENTS.md
 
-* Read the file `README.md` for an overview of this project, what it does, and how it
-works from a user perspective.
+* The file `README.md` has an overview of this project, what it does, and how it
+  works from a user perspective.
 
 ## Tech stack
 
