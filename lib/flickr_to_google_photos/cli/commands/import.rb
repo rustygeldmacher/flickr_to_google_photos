@@ -13,7 +13,8 @@ module FlickrToGooglePhotos::CLI::Commands
     def run
       options = {
         album: nil,
-        next: false
+        next: false,
+        interactive: nil
       }
 
       OptionParser.new do |opts|
@@ -23,6 +24,9 @@ module FlickrToGooglePhotos::CLI::Commands
         end
         opts.on("--album ALBUM_NAME", "Name or ID of Flickr album to import") do |album|
           options[:album] = album
+        end
+        opts.on("-i", "--[no-]interactive", "Run in interactive mode (default: true)") do |bool|
+          options[:interactive] = bool
         end
       end.parse!
 
@@ -35,6 +39,10 @@ module FlickrToGooglePhotos::CLI::Commands
       # Set default to --next if no options specified
       if !options[:next] && !options[:album]
         options[:next] = true
+      end
+
+      if options[:interactive].nil?
+        options[:interactive] = true
       end
 
       execute(options)
@@ -69,7 +77,7 @@ module FlickrToGooglePhotos::CLI::Commands
       puts
 
       cache_photos(album)
-      unless show_files_and_confirm(album)
+      unless show_files_and_confirm(album, options[:interactive])
         return 1
       end
 
@@ -198,7 +206,7 @@ module FlickrToGooglePhotos::CLI::Commands
       progress_bar.finish
     end
 
-    def show_files_and_confirm(album)
+    def show_files_and_confirm(album, interactive)
       # Calculate dynamic column widths
       terminal_width = TTY::Screen.width rescue 80
       filename_width = album.photos.map(&:file_name).max_by(&:length).length
@@ -244,12 +252,14 @@ module FlickrToGooglePhotos::CLI::Commands
 
       puts table.render(:unicode, padding: [0, 1])
 
-      puts "#{album.photos.size} files ready to upload, continue? (Y/n)"
+      if interactive
+        puts "#{album.photos.size} files ready to upload, continue? (Y/n)"
 
-      continue = gets.chomp
-      if !["y", ""].include?(continue)
-        puts "Exiting..."
-        return false
+        continue = gets.chomp
+        if !["y", ""].include?(continue)
+          puts "Exiting..."
+          return false
+        end
       end
 
       return true

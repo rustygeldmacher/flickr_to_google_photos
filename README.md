@@ -27,10 +27,10 @@ To write...
 
 ## Installation
 
-Flickr2GooglePhotos ships as a Ruby gem. Install it like this:
+FlickrToGooglePhotos ships as a Ruby gem. Install it like this:
 
 ```
-$ gem install flickr2googlephotos
+$ gem install flickr_to_google_photos
 ```
 
 ## Setup
@@ -62,7 +62,7 @@ that token back into the CLI and you'll be authenticated.
 
 ## Start Importing Albums
 
-By default, Flickr2GooglePhotos imports one album at a time. To import the next
+By default, FlickrToGooglePhotos imports one album at a time. To import the next
 album (or the first album, in the case you haven't imported any yet), just run:
 
 ```
@@ -95,6 +95,22 @@ $ f2gp import --ignore "Deluth Vacation 2020"
 The specified album will be skipped and `f2gp` will remember to ignore that
 album in the future.
 
+### Import all albums
+
+If you want to import all albums in one go, run:
+
+```
+$ f2gp import --all
+```
+
+This will run the importer for every remaining album. When importing all albums, by
+default you won't be prompted to confirm the photo list before importing. To force
+that behavior, specify interactive mode:
+
+```
+$ f2gp import --all --interactive
+```
+
 ## See Information about Your Albums
 
 ### List your Flickr albums
@@ -105,7 +121,7 @@ To see all of your Flickr albums, run:
 $ f2gp albums --list
 ```
 
-The `list` option takes a `STATUS` flag:
+The `list` option takes an optional `STATUS` flag:
 
 * `all` (default) lists all Flickr albums
 * `imported` lists all albums that have been imported
@@ -122,4 +138,4 @@ $ f2gp albums --download <album-name-or-id>
 ```
 
 This will download all of the photos from the given album and store them
-in the album cache path
+in the album cache path, then
