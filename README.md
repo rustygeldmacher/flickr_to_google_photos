@@ -84,16 +84,6 @@ $ f2gp import --album 72157624544395867
 $ f2gp import --album "Hawaii Vacation 2012"
 ```
 
-### Ignore an album for import
-
-To make sure that `import` skips a given album, use the `--ignore` option:
-
-```
-$ f2gp import --ignore "Deluth Vacation 2020"
-```
-
-The specified album will be skipped and `f2gp` will remember to ignore that
-album in the future.
 
 ### Import all albums
 
@@ -127,6 +117,22 @@ The `list` option takes an optional `STATUS` flag:
 * `imported` lists all albums that have been imported
 * `remaining` lists all albums that are yet to be imported
 * `ignored` lists all ignored albums
+
+## Ignore Albums
+
+### Add an album to the ignore list
+
+To make sure that `import` skips a given album, use the `ignore` command:
+
+```
+# By ID
+$ f2gp ignore --album 72157624544395867
+# Or by name
+$ f2gp ignore --album "Deluth Vacation 2020"
+```
+
+The specified album will be skipped and `f2gp` will remember to ignore that
+album in the future.
 
 ### Download a Flickr album
 

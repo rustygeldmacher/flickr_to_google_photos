@@ -34,6 +34,7 @@ module FlickrToGooglePhotos
             auth      Authenticate with Google Photos
             import    Import Flickr albums to Google Photos
             albums    List and manage Flickr albums
+            ignore    Add albums to ignore list
 
         OPTIONS:
             -h, --help    Show this help message
@@ -47,3 +48,4 @@ end
 require_relative 'cli/commands/auth'
 require_relative 'cli/commands/import'
 require_relative 'cli/commands/albums'
+require_relative 'cli/commands/ignore'

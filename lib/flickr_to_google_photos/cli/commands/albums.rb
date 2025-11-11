@@ -10,8 +10,7 @@ module FlickrToGooglePhotos::CLI::Commands
       # Parse command line options
       options = {
         list: false,
-        status: 'all',
-        ignore: nil
+        status: 'all'
       }
 
       OptionParser.new do |opts|
@@ -22,21 +21,11 @@ module FlickrToGooglePhotos::CLI::Commands
           options[:status] = status || 'all'
         end
 
-        opts.on("--ignore ALBUM_NAME_OR_ID", "Add album to ignore list") do |album|
-          options[:ignore] = album
-        end
-
         opts.on("-h", "--help", "Show this help message") do
           puts opts
           return 0
         end
       end.parse!(argv)
-
-      # Validate mutual exclusion
-      if options[:list] && options[:ignore]
-        puts "Error: Cannot specify both --list and --ignore options"
-        return 1
-      end
 
       # Validate status parameter
       valid_statuses = %w[all imported remaining ignored]
@@ -49,35 +38,11 @@ module FlickrToGooglePhotos::CLI::Commands
     end
 
     def execute(options)
-      if options[:ignore]
-        return ignore_album(options[:ignore])
-      else
-        display_albums_table(options[:status])
-        return 0
-      end
+      display_albums_table(options[:status])
+      return 0
     end
 
     private
-
-    def ignore_album(album_name_or_id)
-      album = FlickrToGooglePhotos::Flickr::Albums.get_album(album_name_or_id)
-
-      if album.nil?
-        puts "Error: Album '#{album_name_or_id}' not found"
-        return 1
-      end
-
-      # Check if already ignored
-      if FlickrToGooglePhotos.config.ignored_album_ids.include?(album.id)
-        puts "Album '#{album.title}' (ID: #{album.id}) is already ignored"
-        return 0
-      end
-
-      # Add to ignored list
-      FlickrToGooglePhotos.config.ignore_album(album.id)
-      puts "Album '#{album.title}' (ID: #{album.id}) has been added to the ignore list"
-      return 0
-    end
 
     def display_albums_table(status_filter = 'all')
       albums = FlickrToGooglePhotos::Flickr::Albums.to_a
