@@ -2,8 +2,6 @@ require 'tty-screen'
 
 module FlickrToGooglePhotos::CLI::Commands
   class Import
-    CACHE_PATH = "tmp"
-
     attr_reader :argv
 
     def initialize(argv)
@@ -28,7 +26,7 @@ module FlickrToGooglePhotos::CLI::Commands
         opts.on("-i", "--[no-]interactive", "Run in interactive mode (default: true)") do |bool|
           options[:interactive] = bool
         end
-      end.parse!
+      end.parse!(argv)
 
       # Validate mutual exclusion
       if options[:next] && options[:album]
@@ -76,7 +74,7 @@ module FlickrToGooglePhotos::CLI::Commands
       puts "=" * header.size
       puts
 
-      cache_photos(album)
+      FlickrToGooglePhotos::CLI::Commands::Download.new.run(album: album)
       unless show_files_and_confirm(album, options[:interactive])
         return 1
       end
@@ -134,50 +132,6 @@ module FlickrToGooglePhotos::CLI::Commands
         end
       end
       album
-    end
-
-    # TODO: Extract to class FlickrToGooglePhotos::Flickr::AlbumCache
-    def cache_photos(album)
-      # Ensure cache exists
-      FileUtils.mkdir_p("#{CACHE_PATH}/#{album.id}")
-
-      # First, determine which photos need to be downloaded
-      photos_to_download = []
-      album.photos.each do |photo|
-        photo.physical_path = "#{CACHE_PATH}/#{album.id}/#{photo.file_name}"
-        photos_to_download << photo unless File.exist?(photo.physical_path)
-      end
-
-      # If no photos need downloading, we're done
-      if photos_to_download.empty?
-        puts "All photos are already downloaded."
-        return
-      end
-
-      puts "Downloading #{album.photos.count} photos..."
-
-      # Create progress bar for downloads
-      progress_bar = TTY::ProgressBar.new(
-        "Downloading [:bar] :current/:total :percent :title",
-        total: photos_to_download.length,
-        bar_format: :block
-      )
-
-      photos_to_download.each.with_index do |photo, i|
-        progress_bar.advance(0, title: photo.file_name)
-
-        File.open(photo.physical_path, 'wb') do |file|
-          file.write(Net::HTTP.get(URI(photo.url)))
-        end
-
-        if (i + 1) < photos_to_download.size
-          progress_bar.advance
-        else
-          progress_bar.advance(title: "Done!")
-        end
-      end
-
-      progress_bar.finish
     end
 
     def upload_photos(album)

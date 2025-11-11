@@ -31,10 +31,11 @@ module FlickrToGooglePhotos
             f2gp <command> [options]
 
         COMMANDS:
-            auth      Authenticate with Google Photos
-            import    Import Flickr albums to Google Photos
-            albums    List and manage Flickr albums
-            ignore    Add albums to ignore list
+            auth        Authenticate with Google Photos
+            import      Import Flickr albums to Google Photos
+            download    Download photos from Flickr albums
+            albums      List and manage Flickr albums
+            ignore      Add albums to ignore list
 
         OPTIONS:
             -h, --help    Show this help message
@@ -46,6 +47,7 @@ module FlickrToGooglePhotos
 end
 
 require_relative 'cli/commands/auth'
+require_relative 'cli/commands/download'
 require_relative 'cli/commands/import'
 require_relative 'cli/commands/albums'
 require_relative 'cli/commands/ignore'
