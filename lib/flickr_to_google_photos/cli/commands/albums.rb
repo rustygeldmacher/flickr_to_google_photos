@@ -9,15 +9,13 @@ module FlickrToGooglePhotos::CLI::Commands
     def run
       # Parse command line options
       options = {
-        list: false,
         status: 'all'
       }
 
       OptionParser.new do |opts|
         opts.banner = "Usage: #{$0} albums [options]"
 
-        opts.on("--list [STATUS]", "List Flickr albums (all, imported, remaining, ignored)") do |status|
-          options[:list] = true
+        opts.on("--status [STATUS]", "List Flickr albums (all, imported, remaining, ignored)") do |status|
           options[:status] = status || 'all'
         end
 
