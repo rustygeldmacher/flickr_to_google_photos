@@ -16,6 +16,10 @@ module FlickrToGooglePhotos
       config_json["googleClientSecret"]
     end
 
+    def photo_cache_path
+      @photo_cache_path ||= File.expand_path(File.join("..", photo_cache_json), config_file_path)
+    end
+
     def flickr_data_path
       @flickr_data_path ||= File.expand_path("../flickr", config_file_path)
     end
@@ -55,6 +59,10 @@ module FlickrToGooglePhotos
 
     def ignored_albums
       config_json["ignoredAlbums"] ||= []
+    end
+
+    def photo_cache_json
+      config_json["photoCachePath"] || "photo-cache"
     end
 
     def config_json

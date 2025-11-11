@@ -1,7 +1,5 @@
 module FlickrToGooglePhotos::CLI::Commands
   class Download
-    CACHE_PATH = "tmp"
-
     attr_reader :argv
 
     def initialize(argv = [])
@@ -40,13 +38,15 @@ module FlickrToGooglePhotos::CLI::Commands
     end
 
     def download_album(album)
+      cache_path = FlickrToGooglePhotos.config.photo_cache_path
+
       # Ensure cache exists
-      FileUtils.mkdir_p("#{CACHE_PATH}/#{album.id}")
+      FileUtils.mkdir_p("#{cache_path}/#{album.id}")
 
       # First, determine which photos need to be downloaded
       photos_to_download = []
       album.photos.each do |photo|
-        photo.physical_path = "#{CACHE_PATH}/#{album.id}/#{photo.file_name}"
+        photo.physical_path = "#{cache_path}/#{album.id}/#{photo.file_name}"
         photos_to_download << photo unless File.exist?(photo.physical_path)
       end
 
