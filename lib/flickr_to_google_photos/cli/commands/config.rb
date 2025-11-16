@@ -1,7 +1,6 @@
 require 'optparse'
 require 'json'
 require 'fileutils'
-require_relative '../../config'
 
 module FlickrToGooglePhotos::CLI::Commands
   class Config
@@ -87,9 +86,9 @@ module FlickrToGooglePhotos::CLI::Commands
       flickr_path = gets.chomp.strip
       flickr_path = "flickr" if flickr_path.empty?
 
-      print "Where should the photo cache be stored? [photo_cache]: "
+      print "Where should the photo cache be stored? [photo-cache]: "
       cache_path = gets.chomp.strip
-      cache_path = "photo_cache" if cache_path.empty?
+      cache_path = "photo-cache" if cache_path.empty?
 
       # Configure using Config class
       begin

@@ -95,7 +95,7 @@ module FlickrToGooglePhotos
           "googleClientId" => nil,
           "googleClientSecret" => nil,
           "flickrDataPath" => "flickr",
-          "photoCachePath" => "photo_cache",
+          "photoCachePath" => "photo-cache",
           "importedAlbums" => [],
           "ignoredAlbums" => []
         }
