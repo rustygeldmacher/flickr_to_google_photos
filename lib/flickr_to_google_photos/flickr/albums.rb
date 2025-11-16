@@ -9,8 +9,15 @@ module FlickrToGooglePhotos
         end
       end
 
-      def self.next_unimported_album
+      def self.next_unimported_album(starting_after: nil)
+        found_starting_point = starting_after.nil?
+
         album = find do |album|
+          if !found_starting_point
+            found_starting_point = (album.id == starting_after)
+            next false  # Skip this album and continue
+          end
+
           !FlickrToGooglePhotos.config.imported_album_ids.include?(album.id) &&
           !FlickrToGooglePhotos.config.ignored_album_ids.include?(album.id)
         end

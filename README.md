@@ -42,7 +42,7 @@ With the prerequisites and installation out of the way, we can set up the projec
 ```
 $ mkdir ~/flickr2gp
 $ cd ~/flickr2gp
-$ f2gp init
+$ f2gp config
 ```
 
 * This creates a file, `config.json` that is used to keep all of your settings.

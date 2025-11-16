@@ -31,6 +31,7 @@ module FlickrToGooglePhotos
             f2gp <command> [options]
 
         COMMANDS:
+            config      Initialize configuration file
             auth        Authenticate with Google Photos
             import      Import Flickr albums to Google Photos
             download    Download photos from Flickr albums
@@ -46,6 +47,7 @@ module FlickrToGooglePhotos
   end
 end
 
+require_relative 'cli/commands/config'
 require_relative 'cli/commands/auth'
 require_relative 'cli/commands/download'
 require_relative 'cli/commands/import'

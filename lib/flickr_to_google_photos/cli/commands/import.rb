@@ -12,35 +12,41 @@ module FlickrToGooglePhotos::CLI::Commands
       options = {
         album: nil,
         next: false,
+        all: false,
         interactive: nil
       }
 
       OptionParser.new do |opts|
-        opts.banner = "Usage: #{$0} [--next | --album ALBUM_NAME]"
+        opts.banner = "Usage: #{$0} [--next | --album ALBUM_NAME | --all]"
         opts.on("--next", "Import the next unimported album (default)") do
           options[:next] = true
         end
         opts.on("--album ALBUM_NAME", "Name or ID of Flickr album to import") do |album|
           options[:album] = album
         end
-        opts.on("-i", "--[no-]interactive", "Run in interactive mode (default: true)") do |bool|
+        opts.on("--all", "Import all remaining unimported albums") do
+          options[:all] = true
+        end
+        opts.on("-i", "--[no-]interactive", "Run in interactive mode (default: true for single albums, false for --all)") do |bool|
           options[:interactive] = bool
         end
       end.parse!(argv)
 
       # Validate mutual exclusion
-      if options[:next] && options[:album]
-        puts "Error: Cannot specify both --next and --album options"
+      exclusive_options = [options[:next], options[:album], options[:all]].count(true)
+      if exclusive_options > 1
+        puts "Error: Cannot specify more than one of --next, --album, or --all options"
         return 1
       end
 
       # Set default to --next if no options specified
-      if !options[:next] && !options[:album]
+      if exclusive_options == 0
         options[:next] = true
       end
 
+      # Set interactive default based on mode
       if options[:interactive].nil?
-        options[:interactive] = true
+        options[:interactive] = !options[:all]  # false for --all, true otherwise
       end
 
       execute(options)
@@ -63,12 +69,63 @@ module FlickrToGooglePhotos::CLI::Commands
     end
 
     def execute(options)
-      album = find_album_to_import(options)
+      if options[:all]
+        execute_all_albums(options)
+      else
+        album = find_album_to_import(options)
+        return 1 if album.nil?
 
-      if album.nil?
-        return 1
+        import_single_album(album, options)
+      end
+    end
+
+    def execute_all_albums(options)
+      imported_count = 0
+      failed_albums = []
+      last_attempted_album_id = nil
+
+      puts "Starting import of all remaining albums..."
+      puts "=" * 50
+      puts
+
+      loop do
+        album = FlickrToGooglePhotos::Flickr::Albums.next_unimported_album(starting_after: last_attempted_album_id)
+        break if album.nil?
+
+        puts "Importing album #{imported_count + 1}: #{album.title}"
+        puts "-" * 40
+
+        # Track this album ID so we can skip past it if the import fails or user declines
+        last_attempted_album_id = album.id
+
+        begin
+          result = import_single_album(album, options)
+          if result == 0
+            imported_count += 1
+            puts "✅ Album imported successfully\n"
+          else
+            failed_albums << album.title
+            puts "❌ Album import failed\n"
+          end
+        rescue => e
+          failed_albums << album.title
+          puts "❌ Album import failed with error: #{e.message}\n"
+        end
       end
 
+      puts "\n" + "=" * 60
+      puts "🎉 BATCH IMPORT COMPLETE!"
+      puts "* Albums successfully imported: #{imported_count}"
+      if failed_albums.any?
+        puts "* Albums failed: #{failed_albums.size}"
+        puts "* Failed albums: #{failed_albums.join(', ')}"
+      end
+      puts "=" * 60
+
+      failed_albums.any? ? 1 : 0
+    end
+
+    def import_single_album(album, options)
       header = "Importing album: #{album.title}"
       puts header
       puts "=" * header.size
@@ -108,6 +165,8 @@ module FlickrToGooglePhotos::CLI::Commands
         flickrAlbumId: album.id,
         googlePhotosAlbumId: gp_album["id"]
       )
+
+      return 0
     end
 
     def google_photos_client
@@ -211,7 +270,6 @@ module FlickrToGooglePhotos::CLI::Commands
 
         continue = gets.chomp
         if !["y", ""].include?(continue)
-          puts "Exiting..."
           return false
         end
       end

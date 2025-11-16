@@ -3,3 +3,4 @@ config.json
 tmp/
 .google_photos_tokens.yaml
 .DS_Store
+TODO.md
