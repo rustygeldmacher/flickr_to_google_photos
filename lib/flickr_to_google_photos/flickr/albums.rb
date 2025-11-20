@@ -41,6 +41,10 @@ module FlickrToGooglePhotos
           JSON.parse(File.read(flickr_albums_path))["albums"]
         end
       end
+
+      def self.reset!
+        @albums_json = nil
+      end
     end
   end
 end

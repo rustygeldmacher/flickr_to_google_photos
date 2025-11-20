@@ -27,6 +27,11 @@ RSpec.configure do |config|
     c.syntax = :expect
   end
 
+  # Make sure each test starts with a clean slate
+  config.before(:each) do
+    FlickrToGooglePhotos.reset!
+  end
+
   # Use around hooks to manage temporary directories
   config.around(:each) do |example|
     Dir.mktmpdir('f2gp_test') do |tmpdir|
@@ -35,11 +40,6 @@ RSpec.configure do |config|
         example.run
       end
     end
-  end
-
-  # Helper method to access the temporary directory
-  config.define_derived_metadata do |meta|
-    meta[:aggregate_failures] = true if meta[:type] == :integration
   end
 end
 

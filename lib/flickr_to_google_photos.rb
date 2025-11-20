@@ -17,6 +17,11 @@ module FlickrToGooglePhotos
       FlickrToGooglePhotos::Config.new(config_file_path)
     end
   end
+
+  def self.reset!
+    @config = nil
+    FlickrToGooglePhotos::Flickr::Albums.reset!
+  end
 end
 
 require_relative 'flickr_to_google_photos/config'

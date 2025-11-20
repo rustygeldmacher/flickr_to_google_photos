@@ -50,7 +50,7 @@ module FlickrToGooglePhotos::CLI::Commands
       end
 
       execute(options)
-    rescue GooglePhotos::Auth::NotAuthenticated
+    rescue GooglePhotos::Auth::NotAuthenticated, Signet::AuthorizationError
       puts <<~MESSAGE
 
 

@@ -11,6 +11,8 @@ module CLIHelpers
     original_stdin = $stdin
 
     stdout = StringIO.new
+    def stdout.ioctl(*args); 100; end
+
     stderr = StringIO.new
     stdin = StringIO.new
 
@@ -70,35 +72,44 @@ module CLIHelpers
   def create_fake_flickr_data(path: 'flickr')
     FileUtils.mkdir_p(path)
 
+    # Create a few sample photo files
+    photo_ids = %w[123 456 789 901 234 567 890]
+    photo_ids.each do |photo_id|
+      photo_data = {
+        "id" => photo_id,
+        "title" => "Test Photo #{photo_id}",
+        "description" => "A test photo",
+        "urls" => {
+          "original" => "https://example.com/photo_#{photo_id}.jpg"
+        }
+      }
+      File.write(File.join(path, "photo_#{photo_id}.json"), JSON.pretty_generate(photo_data))
+    end
+
     # Create a sample albums.json
     albums_data = {
       "albums" => [
         {
           "id" => "72157644251234567",
-          "title" => "Test Album 1",
+          "title" => "Imported Album",
           "description" => "A test album",
-          "photos" => 5
+          "photos" => photo_ids[0..1]
         },
         {
           "id" => "72157644251234568",
-          "title" => "Test Album 2",
+          "title" => "Remaining Album",
           "description" => "Another test album",
-          "photos" => 3
+          "photos" => photo_ids[2..4]
+        },
+        {
+          "id" => "72157644251234569",
+          "title" => "Test Album 3",
+          "description" => "Ignored Album",
+          "photos" => photo_ids[5..6]
         }
       ]
     }
     File.write(File.join(path, 'albums.json'), JSON.pretty_generate(albums_data))
-
-    # Create a few sample photo files
-    photo_data = {
-      "id" => "1234567890",
-      "title" => "Test Photo",
-      "description" => "A test photo",
-      "urls" => {
-        "original" => "https://example.com/photo.jpg"
-      }
-    }
-    File.write(File.join(path, 'photo_1234567890.json'), JSON.pretty_generate(photo_data))
 
     albums_data
   end

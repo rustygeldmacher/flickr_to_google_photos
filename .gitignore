@@ -4,3 +4,4 @@ tmp/
 .google_photos_tokens.yaml
 .DS_Store
 TODO.md
+.rspec_status
