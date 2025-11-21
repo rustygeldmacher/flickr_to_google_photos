@@ -47,6 +47,15 @@
 * There are helpers for creating fake configs and flickr data in `spec/support/cli_helpers`
 * Never run `f2gp` directly in tests. Invoke commands using the
   `run_command` method in `cli_helpers.rb`
-* Do not mock filesystem operations. Each spec runs in its own temp directory, so
+* Do not mock filesystem operations. Each spec runs in its own temp directory, so it
+  is safe to create, edit, and remove files as needed
 * Do not over-test -- there's no need to introduce another test case when an
   existing case can have an assertion added to it
+* Never mock the low-level Flickr classes (Album, Photo, etc.) -- use generated test
+  data instead
+
+## Ruby code style
+
+* Use the Ruby "single-indent" style for multi-line method calls and data structures
+* Prefer using double-quoted strings unless there's a specific need for single quotes
+* For strings requiring multi-line output (more than 2 or 3 lines), use heredocs with `<<~`

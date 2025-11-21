@@ -6,6 +6,7 @@ module FlickrToGooglePhotos::CLI::Commands
 
     def initialize(argv)
       @argv = argv
+      @current_step = 0
     end
 
     def run
@@ -33,7 +34,7 @@ module FlickrToGooglePhotos::CLI::Commands
       end.parse!(argv)
 
       # Validate mutual exclusion
-      exclusive_options = [options[:next], options[:album], options[:all]].count(true)
+      exclusive_options = [options[:next], options[:album], options[:all]].select(&:itself).count
       if exclusive_options > 1
         puts "Error: Cannot specify more than one of --next, --album, or --all options"
         return 1
@@ -136,22 +137,26 @@ module FlickrToGooglePhotos::CLI::Commands
         return 1
       end
 
+      step("Uploading photos")
       upload_photos(album)
 
-      puts "\n2. Creating album..."
+      step("Creating album")
       gp_album = google_photos_client.create_album(album.title)
 
       # Add text enrichment if description provided
       unless (album.description || "").empty?
-        puts "\n3. Adding album description..."
+        step("Adding album description")
         google_photos_client.add_text_enrichment(gp_album["id"], album.description)
       end
 
-      puts "\n#{album.description ? '4' : '3'}. Adding photos to album..."
+      step("Adding photos to album")
       google_photos_client.create_media_items(album, gp_album["id"])
 
       # Set album cover if Flickr album has one
-      set_album_cover(album, gp_album["id"])
+      if (album.cover_photo)
+        step("Setting album cover")
+        set_album_cover(album.cover_photo, gp_album["id"])
+      end
 
       puts "\n" + "=" * 60
       puts "✅ SUCCESS!"
@@ -167,13 +172,6 @@ module FlickrToGooglePhotos::CLI::Commands
       )
 
       return 0
-    end
-
-    def google_photos_client
-      @google_photos_client ||= begin
-        credentials = GooglePhotos::Auth.new.authorize
-        GooglePhotosClient.new(credentials)
-      end
     end
 
     def find_album_to_import(options)
@@ -194,8 +192,6 @@ module FlickrToGooglePhotos::CLI::Commands
     end
 
     def upload_photos(album)
-      puts "1. Uploading photos..."
-
       progress_bar = TTY::ProgressBar.new(
         "Uploading [:bar] :current/:total :percent :title",
         total: album.photos.size,
@@ -277,12 +273,7 @@ module FlickrToGooglePhotos::CLI::Commands
       return true
     end
 
-    def set_album_cover(album, google_album_id)
-      cover_photo = album.cover_photo
-      return unless cover_photo
-
-      puts "\n#{album.description ? '5' : '4'}. Setting album cover..."
-
+    def set_album_cover(cover_photo, google_album_id)
       if cover_photo.media_item
         begin
           google_photos_client.update_album_cover(
@@ -296,6 +287,19 @@ module FlickrToGooglePhotos::CLI::Commands
       else
         puts "⚠ Cover photo not found in uploaded photos"
       end
+    end
+
+    def google_photos_client
+      @google_photos_client ||= begin
+        credentials = GooglePhotos::Auth.new.authorize
+        GooglePhotosClient.new(credentials)
+      end
+    end
+
+    def step(step_name)
+      @current_step += 1
+      puts
+      puts "#{@current_step}. #{step_name}..."
     end
   end
 end
