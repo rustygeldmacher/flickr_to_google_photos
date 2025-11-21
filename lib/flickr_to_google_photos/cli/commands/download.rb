@@ -15,6 +15,10 @@ module FlickrToGooglePhotos::CLI::Commands
             return 1
           end
         end
+        opts.on("-h", "--help", "Show this help message") do
+          puts opts
+          return 0
+        end
       end.parse!(argv)
 
       if album.nil?

@@ -2,6 +2,9 @@ require "set"
 
 module FlickrToGooglePhotos
   class Config
+    class MissingConfig < StandardError; end
+    class InvalidConfig < StandardError; end
+
     attr_reader :config_file_path
 
     def initialize(config_file_path = "config.json")

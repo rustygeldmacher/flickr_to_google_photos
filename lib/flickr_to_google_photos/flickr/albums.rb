@@ -40,6 +40,10 @@ module FlickrToGooglePhotos
           )
           JSON.parse(File.read(flickr_albums_path))["albums"]
         end
+      rescue Errno::ENOENT
+        raise FlickrToGooglePhotos::Config::MissingConfig.new(flickr_albums_path)
+      rescue JSON::ParserError
+        raise FlickrToGooglePhotos::Config::InvalidConfig.new(flickr_albums_path)
       end
 
       def self.reset!

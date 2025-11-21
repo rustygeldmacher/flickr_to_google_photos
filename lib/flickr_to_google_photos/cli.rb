@@ -19,6 +19,13 @@ module FlickrToGooglePhotos
       end
 
       command_class.new(argv).run
+    rescue FlickrToGooglePhotos::Config::MissingConfig => e
+      puts "Error: Configuration file not found: #{e.message}"
+      puts "Run 'f2gp config' to create it."
+      return 1
+    rescue FlickrToGooglePhotos::Config::InvalidConfig => e
+      puts "Error: Invalid configuration file: #{e.message}"
+      return 1
     end
 
     private

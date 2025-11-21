@@ -39,3 +39,14 @@
   through the FlickrToGooglePhotos::Config class
 * When trying to find files based on relative path, use the config class and
   make default paths relative to config.json
+
+## Testing
+
+* Use RSpec for testing
+* Never make actual network calls during test execution
+* There are helpers for creating fake configs and flickr data in `spec/support/cli_helpers`
+* Never run `f2gp` directly in tests. Invoke commands using the
+  `run_command` method in `cli_helpers.rb`
+* Do not mock filesystem operations. Each spec runs in its own temp directory, so
+* Do not over-test -- there's no need to introduce another test case when an
+  existing case can have an assertion added to it
