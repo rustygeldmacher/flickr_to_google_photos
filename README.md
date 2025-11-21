@@ -23,7 +23,29 @@ The first thing you need to do is go into Flickr and request your data. To do th
 
 ### Set up Google API access
 
-To write...
+This might be the trickiest part of the setup. There is a
+[guide](https://developers.google.com/photos/overview/configure-your-app) on Google's
+Developer hub that walks you through it, but we'll cover the basics here.
+
+First you'll want to go to the
+[Google Cloud Console](https://console.cloud.google.com/) and create a new project by using
+the project picker in the upper left of the screen.
+
+Then go to the [API Library](https://console.developers.google.com/apis/library) section of
+the console. Make sure your new project is selected and then search for "Photos". Select
+the "Google Photos Library API". Click "Enable" in the screen that brings you to.
+
+Now create a desktop app. Click "Credentials" on the left side of the screen. Click the
+"Configure Consent Screen" button if it appears. Give it some info about the app, then
+in the Audience section select "External". Give it contact info and then agree to the
+terms. After this go back to the [Credentials](https://console.cloud.google.com/apis/credentials)
+section.
+
+Click "Create Credentials" on the upper nav bar, and select "OAuth Client ID". Under
+"Application Type" click "Desktop App". Give it any name you want. A pop-up saying
+"OAuth client created" should appear. Copy both the "Client ID" and the "Client Secret" that
+are shown in this box. Save these for later, because we'll need to use them in the
+configuration step.
 
 ## Installation
 
@@ -45,9 +67,8 @@ $ cd ~/flickr2gp
 $ f2gp config
 ```
 
-* This creates a file, `config.json` that is used to keep all of your settings.
-
-... TODO: how to edit your config
+* This will ask you a few questions and then create a file, `config.json`
+  that is used to keep all of your settings.
 
 * Now authenticate with Google:
 
@@ -84,7 +105,6 @@ $ f2gp import --album 72157624544395867
 $ f2gp import --album "Hawaii Vacation 2012"
 ```
 
-
 ### Import all albums
 
 If you want to import all albums in one go, run:
@@ -108,10 +128,10 @@ $ f2gp import --all --interactive
 To see all of your Flickr albums, run:
 
 ```
-$ f2gp albums --list
+$ f2gp album
 ```
 
-The `list` option takes an optional `STATUS` flag:
+The `albums` command takes an optional `--status` flag:
 
 * `all` (default) lists all Flickr albums
 * `imported` lists all albums that have been imported
@@ -137,11 +157,11 @@ album in the future.
 ### Download a Flickr album
 
 If you just want to download all of the photos for a Flickr album,
-use the `--download` option:
+use the `download` command:
 
 ```
-$ f2gp albums --download <album-name-or-id>
+$ f2gp download --album <album-name-or-id>
 ```
 
 This will download all of the photos from the given album and store them
-in the album cache path, then
+in the album cache path.
