@@ -113,13 +113,9 @@ RSpec.describe 'albums command', type: :integration do
     end
 
     context 'empty filtered results' do
-      before do
-        # Create config with no imported or ignored albums
-        create_fake_config(
-          "importedAlbums" => [],
-          "ignoredAlbums" => []
-        )
-      end
+      # Fixtures will pick these up and create empty values in the config
+      let(:imported_albums) { [] }
+      let(:ignored_albums) { [] }
 
       it 'displays no albums message for empty imported filter' do
         result = run_command('albums', '--status', 'imported')

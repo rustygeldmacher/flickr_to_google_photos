@@ -3,12 +3,12 @@
 require 'spec_helper'
 
 RSpec.describe 'auth command', type: :integration do
+  include_context "fixtures"
+
   let(:fake_auth_url) { 'https://accounts.google.com/oauth/authorize?fake=params' }
   let(:fake_auth_code) { 'fake_authorization_code_12345' }
 
   before do
-    # Create a valid config file for auth to work
-    create_fake_config
     stub_google_oauth_flow
   end
 

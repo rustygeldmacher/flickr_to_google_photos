@@ -102,6 +102,14 @@ RSpec.shared_context "fixtures" do
 
   let(:flickr_data_path) { "flickr" }
   let(:photo_cache_path) { "photo_cache" }
+  let(:imported_albums) do
+    [{
+      "title" => album_already_imported["title"],
+      "flickrId" => album_already_imported["id"],
+      "googlePhotosId" => "google_album_123"
+    }]
+  end
+  let(:ignored_albums) { [album_ignored["id"]] }
 
   let(:config_json) do
     {
@@ -109,14 +117,8 @@ RSpec.shared_context "fixtures" do
       "googleClientSecret" => "test_client_secret",
       "flickrDataPath" => flickr_data_path,
       "photoCachePath" => photo_cache_path,
-      "importedAlbums" => [{
-        "title" => album_already_imported["title"],
-        "flickrId" => album_already_imported["id"],
-        "googlePhotosId" => "google_album_123"
-      }],
-      "ignoredAlbums" => [
-        album_ignored["id"]
-      ]
+      "importedAlbums" => imported_albums,
+      "ignoredAlbums" => ignored_albums,
     }
   end
 

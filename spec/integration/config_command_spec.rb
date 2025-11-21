@@ -1,10 +1,14 @@
-# frozen_string_literal: true
-
-require 'spec_helper'
+require "spec_helper"
 
 RSpec.describe 'config command', type: :integration do
+  include_context "fixtures"
+
   describe 'f2gp config' do
     context 'when no existing config exists' do
+      before do
+        FileUtils.rm_f('config.json')
+      end
+
       it 'creates a new config file with user input' do
         mock_gets_with(
           'test_client_id',
@@ -86,13 +90,6 @@ RSpec.describe 'config command', type: :integration do
     end
 
     context 'when existing config exists' do
-      before do
-        create_fake_config(
-          "googleClientId" => "old_client_id",
-          "googleClientSecret" => "old_client_secret"
-        )
-      end
-
       it 'offers to backup and replace existing config when user confirms' do
         mock_gets_with(
           'y',               # Confirm replacement
@@ -113,7 +110,7 @@ RSpec.describe 'config command', type: :integration do
         # Verify backup was created
         expect(File.exist?('config.json.bak')).to be true
         backup_data = JSON.parse(File.read('config.json.bak'))
-        expect(backup_data['googleClientId']).to eq('old_client_id')
+        expect(backup_data['googleClientId']).to eq('test_client_id')
 
         # Verify new config was created
         config_data = JSON.parse(File.read('config.json'))
@@ -131,7 +128,7 @@ RSpec.describe 'config command', type: :integration do
 
         # Verify original config is unchanged
         config_data = JSON.parse(File.read('config.json'))
-        expect(config_data['googleClientId']).to eq('old_client_id')
+        expect(config_data['googleClientId']).to eq('test_client_id')
         expect(File.exist?('config.json.bak')).to be false
       end
 

@@ -295,4 +295,19 @@ RSpec.describe FlickrToGooglePhotos::Config do
       end
     end
   end
+
+  # Create a fake config.json file for testing
+  def create_fake_config(path: 'config.json', **options)
+    config_data = {
+      "googleClientId" => "fake_client_id",
+      "googleClientSecret" => "fake_client_secret",
+      "flickrDataPath" => "flickr",
+      "photoCachePath" => "photo_cache",
+      "importedAlbums" => [],
+      "ignoredAlbums" => []
+    }.merge(options)
+
+    File.write(path, JSON.pretty_generate(config_data))
+    config_data
+  end
 end
