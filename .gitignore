@@ -5,3 +5,4 @@ tmp/
 .DS_Store
 TODO.md
 .rspec_status
+flickr_to_google_photos-*.gem
