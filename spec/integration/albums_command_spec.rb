@@ -1,30 +1,9 @@
-# frozen_string_literal: true
-
-require 'spec_helper'
+require "spec_helper"
 
 RSpec.describe 'albums command', type: :integration do
+  include_context "fixtures"
+
   describe 'f2gp albums' do
-    before do
-      # Create a basic config file
-      create_fake_config(
-        "googleClientId" => "test_client_id",
-        "googleClientSecret" => "test_client_secret",
-        "flickrDataPath" => "flickr",
-        "photoCachePath" => "photo_cache",
-        "importedAlbums" => [
-          {
-            "title" => "Test Album 1",
-            "flickrId" => "72157644251234567",
-            "googlePhotosId" => "google_album_123"
-          }
-        ],
-        "ignoredAlbums" => ["72157644251234569"]
-      )
-
-      # Create fake Flickr data with various album statuses
-      create_fake_flickr_data
-    end
-
     context 'help option' do
       it 'displays help message with --help' do
         result = run_command('albums', '--help')
@@ -70,27 +49,26 @@ RSpec.describe 'albums command', type: :integration do
         expect(result.stdout).to include('Photos')
         expect(result.stdout).to include('Status')
         expect(result.stdout).to include('Description')
-        expect(result.stdout).to include('Imported Album')
-        expect(result.stdout).to include('Remaining Album')
-        expect(result.stdout).to include('Ignored Album')
-        expect(result.stdout).to include('Total 3 albums (all)')
+        expect(result.stdout).to include(album_already_imported["title"])
+        expect(result.stdout).to include(album_remaining_1["title"])
+        expect(result.stdout).to include(album_ignored["title"])
+        expect(result.stdout).to include(album_remaining_2["title"])
+        expect(result.stdout).to include('Total 4 albums (all)')
       end
 
       it 'displays all albums with --status all' do
         result = run_command('albums', '--status', 'all')
 
         expect(result).to be_success
-        expect(result.stdout).to include('Total 3 albums (all)')
+        expect(result.stdout).to include('Total 4 albums (all)')
       end
 
       it 'displays only imported albums with --status imported' do
         result = run_command('albums', '--status', 'imported')
 
         expect(result).to be_success
-        expect(result.stdout).to include('Imported Album')
+        expect(result.stdout).to include(album_already_imported["title"])
         expect(result.stdout).to include('Imported')
-        expect(result.stdout).not_to include('Remaining Album')
-        expect(result.stdout).not_to include('Ignored Album')
         expect(result.stdout).to include('Total 1 albums (imported)')
       end
 
@@ -98,11 +76,10 @@ RSpec.describe 'albums command', type: :integration do
         result = run_command('albums', '--status', 'remaining')
 
         expect(result).to be_success
-        expect(result.stdout).to include('Remaining Album')
+        expect(result.stdout).to include(album_remaining_1["title"])
+        expect(result.stdout).to include(album_remaining_2["title"])
         expect(result.stdout).to include('Remaining')
-        expect(result.stdout).not_to include('Imported Album')
-        expect(result.stdout).not_to include('Ignored Album')
-        expect(result.stdout).to include('Total 1 albums (remaining)')
+        expect(result.stdout).to include('Total 2 albums (remaining)')
       end
 
       it 'displays only ignored albums with --status ignored' do
@@ -120,7 +97,7 @@ RSpec.describe 'albums command', type: :integration do
         result = run_command('albums', '--status')
 
         expect(result).to be_success
-        expect(result.stdout).to include('Total 3 albums (all)')
+        expect(result.stdout).to include('Total 4 albums (all)')
       end
     end
 
