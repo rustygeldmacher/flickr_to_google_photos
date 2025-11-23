@@ -11,8 +11,6 @@ module CLIHelpers
     original_stdin = $stdin
 
     stdout = StringIO.new
-    def stdout.ioctl(*args); 100; end
-
     stderr = StringIO.new
     stdin = StringIO.new
 

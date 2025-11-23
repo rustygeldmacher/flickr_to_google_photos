@@ -374,9 +374,6 @@ RSpec.describe "import command", type: :integration do
     # Mock client initialization
     allow(GooglePhotosClient).to receive(:new).and_return(fake_client)
 
-    # Mock TTY::Screen
-    allow(TTY::Screen).to receive(:width).and_return(80)
-
     # Mock EXIF data
     fake_exif = double('EXIF')
     allow(fake_exif).to receive(:date_time_original).and_return(Time.now)

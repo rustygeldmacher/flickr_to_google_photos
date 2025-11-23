@@ -124,6 +124,9 @@ RSpec.shared_context "fixtures" do
 
   # Write the fixtures to disk
   before do
+    # The screen is always 150 characters wide
+    allow(TTY::Screen).to receive(:width).and_return(150)
+
     File.write('config.json', JSON.pretty_generate(config_json))
 
     FileUtils.mkdir_p(flickr_data_path)
