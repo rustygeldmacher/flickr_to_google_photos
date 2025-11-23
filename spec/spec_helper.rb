@@ -1,5 +1,20 @@
 # frozen_string_literal: true
 
+# Only start SimpleCov in CI environments
+if ENV['CI'] || ENV['GITHUB_ACTIONS']
+  require 'simplecov'
+  SimpleCov.start do
+    add_filter '/spec/'
+    add_filter '/vendor/'
+
+    # Group coverage by logical sections
+    add_group 'CLI', 'lib/flickr_to_google_photos/cli'
+    add_group 'Flickr', 'lib/flickr_to_google_photos/flickr'
+    add_group 'Google Photos', 'lib/flickr_to_google_photos/google_photos'
+    add_group 'Utilities', 'lib/flickr_to_google_photos/util'
+  end
+end
+
 require 'bundler/setup'
 require 'rspec'
 require 'webmock/rspec'
